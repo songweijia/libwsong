@@ -1,2 +1,2 @@
 # wsong
-My Own C/C++ library
+My C/C++ library
