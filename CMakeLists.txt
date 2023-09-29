@@ -40,10 +40,12 @@ find_package(Doxygen)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/wsong/config.h)
 add_subdirectory(src/perf)
+add_subdirectory(src/ipc)
 add_subdirectory(src/applications)
 
 add_library(wsong SHARED
-    $<TARGET_OBJECTS:timing>
+    $<TARGET_OBJECTS:perf>
+    $<TARGET_OBJECTS:ipc>
 )
 
 # make install
@@ -57,3 +59,21 @@ install(DIRECTORY
         FILES_MATCHING
         PATTERN "*.h"
         PATTERN "*.hpp")
+
+# documentation
+set (DOXYGEN_EXCLUDE src/applications)
+set (DOXYGEN_PROJECT_NUMBER ${cascade_VERSION})
+set (DOXYGEN_TAB_SIZE 4)
+set (DOXYGEN_WARNINGS NO)
+set (DOXYGEN_WARN_IF_UNDOCUMENTED NO)
+set (DOXYGEN_WARN_NO_PARAMDOC NO)
+if (DOXYGEN_FOUND)
+    # create docs
+    doxygen_add_docs(docs
+        ${CMAKE_SOURCE_DIR}/README.md
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+        ALL
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+endif()
