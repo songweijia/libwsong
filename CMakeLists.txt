@@ -39,7 +39,7 @@ endif ( )
 find_package(Doxygen)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/wsong/config.h)
-add_subdirectory(src/timing)
+add_subdirectory(src/perf)
 add_subdirectory(src/applications)
 
 add_library(wsong SHARED

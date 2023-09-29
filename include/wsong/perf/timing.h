@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#include "common.h"
+#include <wsong/common.h>
 
 #define WS_TIMING_DEFAULT_CAPACITY  (1ull<<20)
 

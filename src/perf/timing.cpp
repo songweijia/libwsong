@@ -1,5 +1,5 @@
 #include <wsong/config.h>
-#include <wsong/timing.h>
+#include <wsong/perf/timing.h>
 
 #include <memory>
 #include <string>

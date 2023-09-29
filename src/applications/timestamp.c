@@ -1,4 +1,4 @@
-#include <wsong/timing.h>
+#include <wsong/perf/timing.h>
 
 int main(int argc, char** argv) {
     ws_timing_punch(1000,1,2);
