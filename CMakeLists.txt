@@ -43,13 +43,22 @@ add_subdirectory(src/perf)
 add_subdirectory(src/ipc)
 add_subdirectory(src/applications)
 
-add_library(wsong SHARED
-    $<TARGET_OBJECTS:perf>
-    $<TARGET_OBJECTS:ipc>
+add_library(perf SHARED
+    $<TARGET_OBJECTS:perf_objs>
+)
+set_target_properties(perf PROPERTIES
+    OUTPUT_NAME wsongperf
+)
+
+add_library(ipc SHARED
+    $<TARGET_OBJECTS:ipc_objs>
+)
+set_target_properties(ipc PROPERTIES
+    OUTPUT_NAME wsongipc
 )
 
 # make install
-install(TARGETS wsong EXPORT wsongTargets
+install(TARGETS perf ipc EXPORT libwsongTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY
@@ -59,6 +68,37 @@ install(DIRECTORY
         FILES_MATCHING
         PATTERN "*.h"
         PATTERN "*.hpp")
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/libwsongConfigVersion.cmake"
+    VERSION ${libwsong_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+export (EXPORT libwsongTargets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/libwsongTargets.cmake"
+)
+
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/libwsong)
+
+configure_package_config_file(libwsongConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/libwsongConfig.cmake"
+    INSTALL_DESTINATION ${ConfigPackageLocation}
+    PATH_VARS CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_INCLUDEDIR
+)
+
+install(EXPORT libwsongTargets
+    FILE libwsongTargets.cmake
+    NAMESPACE libwsong::
+    DESTINATION ${ConfigPackageLocation}
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/libwsongConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/libwsongConfigVersion.cmake"
+    DESTINATION ${ConfigPackageLocation}
+)
 
 # documentation
 set (DOXYGEN_EXCLUDE src/applications)

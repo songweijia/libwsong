@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.12.4)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-add_library(ipc OBJECT
+add_library(ipc_objs OBJECT
     ring_buffer.cpp)
-target_include_directories(ipc PRIVATE
+target_include_directories(ipc_objs PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

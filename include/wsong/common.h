@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wsong/config.h>
 /**
  * @file    common.h
  * @brief   Common definitions

@@ -8,5 +8,5 @@ target_include_directories(timestamp_c PRIVATE
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
-target_link_libraries(timestamp_c wsong)
-add_dependencies(timestamp_c wsong)
+target_link_libraries(timestamp_c perf)
+add_dependencies(timestamp_c perf)
