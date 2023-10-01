@@ -13,9 +13,9 @@
  */
 #define WS_DLL_PUBLIC   __attribute__ ((visibility ("default")))
 /**
- * @brief For definitions with local visibility
+ * @brief For definitions with private visibility
  */
-#define WS_DLL_LOCAL    __attribute__ ((visibility ("hidden")))
+#define WS_DLL_PRIVATE   __attribute__ ((visibility ("hidden")))
 #else
 /**
  * @brief place holder for compatibility reason
@@ -24,5 +24,14 @@
 /**
  * @brief place holder for compatibility reason
  */
-#define WS_DLL_LOCAL
+#define WS_DLL_PRIVATE
 #endif
+
+/**
+ * @brief align macro
+ */
+#define WS_ALIGNED(x)  __attribute__ ((aligned(x)))
+/**
+ * @brief align with cacheline
+ */
+#define WS_CL_ALIGNED WS_ALIGNED(CACHELINE_SIZE)

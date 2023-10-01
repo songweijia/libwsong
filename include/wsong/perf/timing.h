@@ -35,7 +35,7 @@ WS_DLL_PUBLIC void ws_timing_punch(const uint64_t tag, const uint64_t user_data1
 WS_DLL_PUBLIC void ws_timing_save(const char* filename);
 
 /**
- * @breif clear in-memory timestamp logs.
+ * @brief clear in-memory timestamp logs.
  * Clear in-memory timestamps and reset the log position.
  */
 WS_DLL_PUBLIC void ws_timing_clear();
