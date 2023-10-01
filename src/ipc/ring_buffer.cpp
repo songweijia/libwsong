@@ -233,7 +233,7 @@ void RingBuffer::delete_ring_buffer(const key_t key) {
     }
 }
 
-std::unique_ptr<RingBuffer> get_ring_buffer(const key_t key) {
+std::unique_ptr<RingBuffer> RingBuffer::get_ring_buffer(const key_t key) {
     int shmid = shmget(key,0,0);
 
     if (shmid == -1) {

@@ -158,6 +158,25 @@ struct ipc_command ipc_commands[] = {
             std::cout << "A ring buffer is created with key = 0x" << std::hex << key << std::endl;
         }
     },
+    {"ringbuffer","show",
+        [](const Properties& props) {
+            if (!PCONTAINS(props,"key")) {
+                throw wsong::ws_exp("Mandatory key property is not found. Please specify it using '-p key=<key>'");
+            }
+            const key_t key = static_cast<key_t>(std::stol(props.at("key"),nullptr,0));
+            auto ring_buffer_ptr = wsong::ipc::RingBuffer::get_ring_buffer(key);
+            auto attribute = ring_buffer_ptr->attribute();
+            std::cout << "key:          0x" << std::hex << attribute.key << std::dec << std::endl;
+            std::cout << "id:           "   << attribute.id << std::endl;
+            std::cout << "page_size:    "   << attribute.page_size/1024 << " KB" << std::endl;
+            std::cout << "capacity:     "   << attribute.capacity << std::endl;
+            std::cout << "entry_size:   "   << attribute.entry_size << " Bytes" << std::endl;
+            std::cout << "multiple_producer:    "   << attribute.multiple_producer << std::endl;
+            std::cout << "multiple_consumer:    "   << attribute.multiple_consumer << std::endl;
+            std::cout << "description:  "   << attribute.description << std::endl;
+            std::cout << "current size: "   << ring_buffer_ptr->size() <<std::endl;
+        }
+    },
     {nullptr,nullptr,{}}
 };
 
