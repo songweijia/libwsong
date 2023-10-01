@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 #include <cstring>
+#include <cstdlib>
 #include <unordered_map>
 #include <vector>
 #include <functional>
@@ -97,7 +98,11 @@ struct ipc_command ipc_commands[] = {
                 .description    = {'\0'},
             };
             if (PCONTAINS(props,"key")) {
-                attribute.key = std::stol(props.at("key"));
+                attribute.key = std::stol(props.at("key"),nullptr,0);
+            }
+            if (attribute.key == 0) {
+                std::srand(static_cast<unsigned>(time(nullptr)));
+                attribute.key = static_cast<key_t>(rand());
             }
             if (PCONTAINS(props,"page_size")) {
                 std::string pss = props.at("page_size");

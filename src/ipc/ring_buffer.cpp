@@ -161,7 +161,7 @@ key_t RingBuffer::create_ring_buffer(const RingBufferAttribute& attribute) {
     }
 
     // create ring buffer memory
-    int shmflg = IPC_CREAT | IPC_EXCL ;
+    int shmflg = IPC_CREAT | IPC_EXCL | 0644; // the default permission
     switch (attribute.page_size) {
     case 1<<12:
         break;
