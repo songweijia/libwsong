@@ -219,5 +219,38 @@ key_t RingBuffer::create_ring_buffer(const RingBufferAttribute& attribute) {
     return buf.shm_perm.__key;
 }
 
+void RingBuffer::delete_ring_buffer(const key_t key) {
+    int shmid = shmget(key,0,0);
+
+    if (shmid == -1) {
+        throw ws_exp(std::string("shmget failed with error:") + 
+                     std::strerror(errno));
+    }
+
+    if (shmctl(shmid,IPC_RMID,nullptr) == -1) {
+        throw ws_exp(std::string("deltete shared memory: shmctl failed with error:") +
+                     std::strerror(errno));
+    }
+}
+
+std::unique_ptr<RingBuffer> get_ring_buffer(const key_t key) {
+    int shmid = shmget(key,0,0);
+
+    if (shmid == -1) {
+        throw ws_exp(std::string("shmget failed with error:") + 
+                     std::strerror(errno));
+    }
+
+    void* mem_ptr = shmat(shmid,nullptr,0);
+    if (mem_ptr == nullptr) {
+        throw ws_exp(std::string("Memory attach failed: shmat failed with error:") +
+                     std::strerror(errno));
+    }
+
+    RingBuffer* rb = new RingBuffer(mem_ptr);
+
+    return std::unique_ptr<RingBuffer>(rb);
+}
+
 }
 }

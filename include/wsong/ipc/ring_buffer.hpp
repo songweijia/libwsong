@@ -147,12 +147,18 @@ private:
      */
     const RingBufferHeader* const   info_ptr;
 
+public:
     /**
      * @fn RingBuffer(void* mem_ptr)
      * @brief   Constructor
      * @param[in]   mem_ptr     The pointer to the shared memory.
      */
     WS_DLL_PRIVATE RingBuffer(void* mem_ptr) ;
+    /**
+     * @fn virtual ~RingBuffer()
+     * @brief   destructor
+     */
+    WS_DLL_PUBLIC virtual ~RingBuffer() ;
     /**
      * @fn void produce(const void* buffer, uint16_t size, uint64_t timeout_ns)
      * @brief   Produce a buffer.
@@ -171,13 +177,6 @@ private:
      *                          throw an exception on failure.
      */
     WS_DLL_PUBLIC void consume(void* buffer, uint16_t size, uint64_t timeout_ns) ;
-    /**
-     * @fn virtual ~RingBuffer()
-     * @brief   destructor
-     */
-    WS_DLL_PUBLIC virtual ~RingBuffer() ;
-
-public:
     /**
      * @fn RingBufferAttribute attribute();
      * @brief   Get attribute
@@ -245,7 +244,7 @@ public:
      * @param[in]   key         The key of the IPC ring buffer to get.
      * @return      A unique pointer to the ring buffer.
      */
-    WS_DLL_PUBLIC static std::unique_ptr<RingBuffer> get_ring_buffer(const key_t key) ;
+    WS_DLL_PUBLIC static std::unique_ptr<RingBuffer> get_ring_buffer(const key_t key);
 };
 
 }
