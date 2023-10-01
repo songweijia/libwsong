@@ -177,6 +177,16 @@ struct ipc_command ipc_commands[] = {
             std::cout << "current size: "   << ring_buffer_ptr->size() <<std::endl;
         }
     },
+    {"ringbuffer","delete",
+        [](const Properties& props) {
+            if (!PCONTAINS(props,"key")) {
+                throw wsong::ws_exp("Mandatory key property is not found. Please specify it using '-p key=<key>'");
+            }
+            const key_t key = static_cast<key_t>(std::stol(props.at("key"),nullptr,0));
+            wsong::ipc::RingBuffer::delete_ring_buffer(key);
+            std::cout << "RingBuffer with key=0x" << std::hex << key << std::dec << " is deleted." << std::endl;
+        }
+    },
     {nullptr,nullptr,{}}
 };
 
