@@ -226,6 +226,12 @@ public:
     /**
      *  @fn static key_t  create_ring_buffer(const RingBufferAttribute& attribute);
      *  @brief  Create a new IPC ring buffer.
+     *  Important: this method will allocate the required memory and pin them. In case of "Cannot allocate memory"
+     *  failure, you can check the system limit using 'ulimit -l' to see if the ring buffer size goes beyond it.
+     *
+     *  In a NUMA system, you can control the location of the shared memory using "numactl --membind" on the caller
+     *  process.
+     *
      *  @param[in]  attribute       The attribute of the ring buffer. If `attribute.key` is not specified, a random key
      *                              will be chosen on a successful call.
      *  @return     The key of a successfully created ring buffer.
