@@ -1,15 +1,20 @@
 #include <getopt.h>
 
+#include <cstring>
+#include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <string>
-#include <cstring>
-#include <cstdlib>
+#include <atomic>
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <thread>
 
 #include <wsong/ipc/ring_buffer.hpp>
+
+using namespace std::chrono;
 
 const char* help_string = 
 "libwsong IPC cli tool\n"
@@ -76,9 +81,11 @@ struct ipc_command ipc_commands[] = {
                                 "description:=<desc string>, less than 255 characters [""]\n";
             } else if (command == "perf") {
                 more_string =   "Properties:\n"
+                                "key:=<ring buffer key>\n"
                                 "role:=producer|consumer\n"
                                 "size:=<message size>   [ring buffer entry size]\n"
-                                "count:=<# of messages to send> [1000]\n";
+                                "wcount:=<# of warmup messages to send> [1000]\n"
+                                "rcount:=<# of test run messages to send> [10000]\n";
             } else {
                 more_string =   "Unknown command:" + command + "\n";
             }
@@ -185,6 +192,101 @@ struct ipc_command ipc_commands[] = {
             const key_t key = static_cast<key_t>(std::stol(props.at("key"),nullptr,0));
             wsong::ipc::RingBuffer::delete_ring_buffer(key);
             std::cout << "RingBuffer with key=0x" << std::hex << key << std::dec << " is deleted." << std::endl;
+        }
+    },
+    {"ringbuffer","perf",
+        [](const Properties& props) {
+            if (!PCONTAINS(props,"key")) {
+                throw wsong::ws_exp("Mandatory 'key' property is not found. Please specify it using '-p key=<key>'");
+            }
+            const key_t key = static_cast<key_t>(std::stol(props.at("key"),nullptr,0));
+
+            if (!PCONTAINS(props,"role")) {
+                throw wsong::ws_exp("Mandatory 'role' property is not found. Please specify it using '-p role=<role>'");
+            }
+            std::string role = props.at("role");
+
+            size_t message_size = 0;
+            if (PCONTAINS(props,"size")) {
+                message_size = std::stol(props.at("size"),nullptr,0);
+            }
+            
+            size_t wcount = 1000;
+            if (PCONTAINS(props,"wcount")) {
+                wcount = std::stol(props.at("wcount"),nullptr,0);
+            }
+
+            size_t rcount = 10000;
+            if (PCONTAINS(props,"rcount")) {
+                rcount = std::stol(props.at("rcount"),nullptr,0);
+            }
+
+            // attach
+            auto rbptr = wsong::ipc::RingBuffer::get_ring_buffer(key);
+
+            // validate arguments
+            auto attr = rbptr->attribute();
+            if (message_size > attr.entry_size) {
+                throw wsong::ws_exp("Invalid message_size " + std::to_string(message_size)
+                                    + ", which should be no bigger than entry size "
+                                    + std::to_string(attr.entry_size));
+            }
+
+            if (message_size == 0) {
+                message_size = attr.entry_size;
+            }
+
+            // run perf
+            uint8_t buffer[message_size] __attribute__ (( aligned(CACHELINE_SIZE) ));
+            uint64_t *psts = reinterpret_cast<uint64_t*>(buffer); // send timestamp (sts)
+            std::memset(reinterpret_cast<void*>(buffer),0,message_size);
+            if (role == "producer") {
+                // warmup
+                while(wcount--) {
+                    // Setting  sts to zero disables evaluation on consumer side.
+                    rbptr->produce(reinterpret_cast<void*>(buffer),message_size,1min);
+                }
+                while(rcount--) {
+                    *psts = duration_cast<nanoseconds>(
+                                steady_clock::now().time_since_epoch()
+                            ).count();
+                    rbptr->produce(reinterpret_cast<void*>(buffer),message_size,1min);
+                }
+            } else if (role == "consumer") {
+                std::atomic<bool> stop = false;
+                std::thread consumer_thread(
+                    [&rbptr,&stop,&psts,rcount,&buffer,message_size] () {
+                        uint64_t latencies_ns[rcount];
+                        size_t lpos;
+                        std::memset(reinterpret_cast<void*>(latencies_ns),0,rcount*sizeof(uint64_t));
+                        while (!stop.load()) {
+                            try {
+                                rbptr->consume(reinterpret_cast<void*>(buffer),message_size,1s);
+                            } catch (const wsong::ws_timeout_exp& toex) {
+                                continue;
+                            }
+                            if (*psts != 0) {
+
+                                uint64_t rts =
+                                duration_cast<nanoseconds>(
+                                    steady_clock::now().time_since_epoch()
+                                ).count();
+                                if (lpos >= rcount) {
+                                    throw wsong::ws_exp("rcount is too small. More message received than that.");
+                                }
+
+                                latencies_ns[lpos++] = (rts - *psts);
+                            }
+                        }
+                        for(size_t i=0;i<lpos;i++) {
+                            std::cout << latencies_ns[i] << std::endl;
+                        }
+                    });
+                std::cerr << "Press Enter to Finish." << std::endl;
+                std::cin.get();
+                stop.store(true);
+                consumer_thread.join();
+            }
         }
     },
     {nullptr,nullptr,{}}

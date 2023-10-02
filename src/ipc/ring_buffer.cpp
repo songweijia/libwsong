@@ -126,7 +126,7 @@ void RingBuffer::consume(void* buffer, uint16_t size, uint64_t timeout_ns) {
             succ = true;
             break;
         }
-    } while (end < std::chrono::steady_clock::now());
+    } while (end > std::chrono::steady_clock::now());
 
     // unlock
     if (RB_MULTIPLE_CONSUMER) {
