@@ -17,3 +17,9 @@ target_include_directories(ipc_cli PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_link_libraries(ipc_cli ipc_objs)
+
+install(TARGETS ipc_cli
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(PROGRAMS rb_cli
+        TYPE BIN 
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

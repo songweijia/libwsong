@@ -257,7 +257,7 @@ struct ipc_command ipc_commands[] = {
                 std::thread consumer_thread(
                     [&rbptr,&stop,&psts,rcount,&buffer,message_size] () {
                         uint64_t latencies_ns[rcount];
-                        size_t lpos;
+                        size_t lpos = 0;
                         std::memset(reinterpret_cast<void*>(latencies_ns),0,rcount*sizeof(uint64_t));
                         while (!stop.load()) {
                             try {
