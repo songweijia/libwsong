@@ -16,18 +16,46 @@
 
 using namespace std::chrono;
 
-const char* help_string = 
-"libwsong IPC cli tool\n"
-"---------------------\n"
-"option:\n"
-"--(i)pc <type>         specifies the ipc type to control. (mandatory)\n"
-"                       type:=ringbuffer|...\n"
+const std::unordered_map<std::string,std::string> cli_aliases = {
+    {"rb_cli","ringbuffer"}
+};
+
+const char* help_string_args = 
 "--(c)md <command>      specifies the command to execute. (mandatory)\n"
 "                       command:=more|show|create|delete|perf|...\n"
 "--(p)roperty <p=val>   specify a property for the command. Multiple --prop entries are alloed.\n"
 "                       use --(h)elp to show the corresponding properties.\n"
-"--(h)elp               print this information.\n"
-;
+"--(h)elp               print this information.\n";
+
+
+static std::string get_alias(const char* cmd) {
+    std::string alias(cmd);
+    if (alias.rfind('/') != std::string::npos) {
+        alias = alias.substr(alias.rfind('/')+1);
+    }
+    return alias;
+}
+
+static void print_help(const char* cmd) {
+    std::string alias = get_alias(cmd);
+    if (cli_aliases.find(alias) == cli_aliases.cend()) {
+        std::cout << "libwsong IPC cli tool" << std::endl;
+        std::cout << "=====================" << std::endl;
+        std::cout << "Usage: " << cmd << " [options]" << std::endl;
+        std::cout << "--(i)pc <type>         specifies the ipc type to control. (mandatory)" << std::endl;
+        std::cout << "                       type:=";
+        for(auto& alias: cli_aliases) {
+            std::cout << alias.second << "|";
+        }
+        std::cout << "..." << std::endl;
+        std::cout << help_string_args << std::endl;
+    } else {
+        std::cout << "libwsong " << cli_aliases.at(alias) << " cli tool" << std::endl;
+        std::cout << "=====================" << std::endl;
+        std::cout << "Usage: " << cmd << " [options]" << std::endl;
+        std::cout << help_string_args << std::endl;
+    }
+}
 
 static struct option long_options[] = {
     {"ipc",     required_argument,  0,  'i'},
@@ -325,7 +353,7 @@ int main(int argc, char** argv) {
             props.emplace(parse_prop(optarg));
             break;
         case 'h':
-            std::cout << help_string << std::endl;
+            print_help(argv[0]);
             return 0;
         case '?':
         default:
@@ -333,8 +361,12 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (cli_aliases.find(get_alias(argv[0])) != cli_aliases.cend()) {
+        ipc = cli_aliases.at(get_alias(argv[0]));
+    }
+
     if (ipc.size() == 0 || cmd.size() == 0) {
-        std::cout << help_string << std::endl;
+        print_help(argv[0]);
         return 0;
     }
 

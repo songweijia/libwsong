@@ -1,2 +1,0 @@
-#!/usr/bin/env sh
-ipc_cli -i ringbuffer $@
