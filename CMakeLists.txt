@@ -25,6 +25,11 @@ execute_process(COMMAND getconf LEVEL1_DCACHE_LINESIZE OUTPUT_VARIABLE CLSZ)
 string(STRIP ${CLSZ} CLSZ)
 set(CACHELINE_SIZE ${CLSZ})
 
+# find default page size
+execute_process(COMMAND getconf PAGESIZE OUTPUT_VARIABLE PGSZ)
+string(STRIP ${PGSZ} PGSZ)
+set(PAGE_SIZE ${PGSZ})
+
 include(GNUInstallDirs)
 
 if ( NOT DEFINED CMAKE_INSTALL_LIBDIR )

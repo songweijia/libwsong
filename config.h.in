@@ -1,1 +1,2 @@
 #cmakedefine    CACHELINE_SIZE  @CACHELINE_SIZE@
+#cmakedefine    PAGE_SIZE   @PAGE_SIZE@
