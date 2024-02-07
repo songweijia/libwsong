@@ -190,8 +190,7 @@ public:
      * @tparam      Period      An std::ratio type representing the tick period.
      * @param[in]   buffer      Pointer to the buffer to send.
      * @param[in]   size        Size of the data in the buffer.
-     * @param[in]   timeout     Timeout in nanoseconds, if specified with 0, it returns immediately or
-     *                          throw an exception on failure.
+     * @param[in]   timeout     Timeout
      */
     template <class Rep, class Period>
     void produce(const void* buffer, uint16_t size,const std::chrono::duration<Rep, Period>& timeout)  {
@@ -204,8 +203,7 @@ public:
      * @tparam      Period      An std::ratio type representing the tick period.
      * @param[in]   buffer      Pointer to the receiving buffer.
      * @param[in]   size        Size of the buffer.
-     * @param[in]   timeout     Timeout in nanoseconds, if specified with 0, it returns immediately or
-     *                          throw an exception on failure.
+     * @param[in]   timeout     Timeout
      */
     template <class Rep, class Period>
     void consume(void* buffer, uint16_t size,const std::chrono::duration<Rep, Period>& timeout)  {
