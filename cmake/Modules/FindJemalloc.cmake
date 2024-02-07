@@ -20,7 +20,7 @@ find_path(JEMALLOC_INCLUDE_DIR jemalloc/jemalloc.h
     ${PC_JEMALLOC_INCLUDE_DIRS}
   PATH_SUFFIXES include)
 
-find_library(JEMALLOC_LIBRARY NAMES jemalloc.a libjemalloc.a
+find_library(JEMALLOC_LIBRARY NAMES libjemalloc_pic.a
   HINTS
     ${JEMALLOC_ROOT} ENV JEMALLOC_ROOT
     ${PC_JEMALLOC_MINIMAL_LIBDIR}
@@ -47,7 +47,7 @@ find_package_handle_standard_args(Jemalloc REQUIRED_VARS
 
 
 if(JEMALLOC_FOUND)
-  set(JEMALLOC_LIBRARIES    "${JEMALLOC_LIBRARY} -lm -lstdc++ -pthread")
+  set(JEMALLOC_LIBRARIES    ${JEMALLOC_LIBRARY} -lm -lstdc++ -pthread)
   set(JEMALLOC_INCLUDE_DIRS ${JEMALLOC_INCLUDE_DIR})
 endif()
 

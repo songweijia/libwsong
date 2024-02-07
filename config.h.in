@@ -1,2 +1,3 @@
-#cmakedefine    CACHELINE_SIZE  @CACHELINE_SIZE@
-#cmakedefine    PAGE_SIZE   @PAGE_SIZE@
+#cmakedefine    CACHELINE_SIZE      (@CACHELINE_SIZE@)
+#cmakedefine    PAGE_SIZE           (@PAGE_SIZE@)
+#cmakedefine    ENABLE_SHMALLOC

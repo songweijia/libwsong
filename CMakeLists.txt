@@ -70,6 +70,9 @@ set_target_properties(perf PROPERTIES
 add_library(ipc SHARED
     $<TARGET_OBJECTS:ipc_objs>
 )
+if (${ENABLE_SHMALLOC})
+    target_link_libraries(ipc ${JEMALLOC_LIBRARIES})
+endif()
 set_target_properties(ipc PROPERTIES
     OUTPUT_NAME wsongipc
 )
