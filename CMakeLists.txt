@@ -40,8 +40,20 @@ if ( NOT DEFINED CMAKE_INSTALL_INCLUDEDIR )
     set( CMAKE_INSTALL_INCLUDEDIR include )
 endif ( )
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
+
 # doxygen
 find_package(Doxygen)
+
+# jemalloc
+find_package(Jemalloc)
+if (${JEMALLOC_FOUND})
+    message(STATUS "Jemalloc is found, shmalloc compoment is enabled.")
+    set(ENABLE_SHMALLOC 1)
+else()
+    message(STATUS "Jemalloc not found, shmalloc component is disabled.")
+    set(ENABLE_SHMALLOC 0)
+endif()
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/wsong/config.h)
 add_subdirectory(src/perf)
@@ -107,7 +119,7 @@ install(FILES
 
 # documentation
 set (DOXYGEN_EXCLUDE src/applications)
-set (DOXYGEN_PROJECT_NUMBER ${cascade_VERSION})
+set (DOXYGEN_PROJECT_NUMBER ${libwsong_VERSION})
 set (DOXYGEN_TAB_SIZE 4)
 set (DOXYGEN_WARNINGS NO)
 set (DOXYGEN_WARN_IF_UNDOCUMENTED NO)
