@@ -134,7 +134,7 @@ Timestamp::Timestamp(size_t num_entries):
 void Timestamp::instance_log(uint64_t tag, uint64_t u1, uint64_t u2, uint64_t u3, uint64_t u4) {
     struct timespec ts;
     uint64_t ts_ns;
-    clock_gettime(CLOCK_MONOTONIC,&ts);
+    clock_gettime(CLOCK_REALTIME,&ts);
     ts_ns = ts.tv_sec*1e9 + ts.tv_nsec;
     pthread_spin_lock(&lck);
 
