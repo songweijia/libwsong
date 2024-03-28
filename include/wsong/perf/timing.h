@@ -18,13 +18,16 @@ extern "C" {
 #endif
 /**
  * @brief log timestamp
- * Log timestamp in a global in-memory buffer.
+ * Log timestamp in a global in-memory buffer. You can log more timestamp than WS_TIMING_DEFAULT_CAPACITY. The earliest
+ * logs will be overwritten.
  *
  * @param[in]   tag         Event tag, a.k.a event identifier.
  * @param[in]   user_data1  User data, defined by callers.
- * @param[in]   user_data2  user data, defined by callers.
+ * @param[in]   user_data2  User data, defined by callers.
+ * @param[in]   user_data3  User data, defined by callers.
+ * @param[in]   user_data4  User data, defined by callers.
  */
-WS_DLL_PUBLIC void ws_timing_punch(const uint64_t tag, const uint64_t user_data1, const uint64_t user_data2);
+WS_DLL_PUBLIC void ws_timing_punch(const uint64_t tag, const uint64_t user_data1, const uint64_t user_data2, const uint64_t user_data3, const uint64_t user_data4);
 
 /**
  * @brief save timestamp

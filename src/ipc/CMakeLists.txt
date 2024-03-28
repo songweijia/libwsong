@@ -41,6 +41,7 @@ install(CODE "execute_process( \
 if (${ENABLE_SHMALLOC})
 install(CODE "execute_process( \
     COMMAND ${CMAKE_COMMAND} -E create_symlink \
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/ipc_cli \
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sm_cli \
     )"
 )
