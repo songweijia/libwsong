@@ -2,10 +2,7 @@ cmake_minimum_required(VERSION 3.12.4)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-set(IPC_SOURCES ring_buffer.cpp)
-if (${ENABLE_SHMALLOC})
-    set(IPC_SOURCES ${IPC_SOURCES} shmalloc.cpp)
-endif()
+set(IPC_SOURCES ring_buffer.cpp shmpool.cpp)
 add_library(ipc_objs OBJECT
     ${IPC_SOURCES})
 target_include_directories(ipc_objs PRIVATE
@@ -38,11 +35,9 @@ install(CODE "execute_process( \
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/rb_cli \
     )"
 )
-if (${ENABLE_SHMALLOC})
 install(CODE "execute_process( \
     COMMAND ${CMAKE_COMMAND} -E create_symlink \
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/ipc_cli \
-    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sm_cli \
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/shmpl_cli \
     )"
 )
-endif()
