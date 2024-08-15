@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 3.12.4)
+cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 project(wsong LANGUAGES C CXX)
 
 # Version
@@ -8,9 +11,6 @@ set(libwsong_VERSION 1.0rc0)
 set(libwsong_build_VERSION 1.0rc0)
 
 # C++ STANDARD
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG             "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -ggdb -gdwarf-3 -ftemplate-backtrace-limit=0")
 set(CMAKE_CXX_FLAGS_RELEASE           "${CMAKE_CXX_FLAGS_RELEASE} -O3 -mprefer-vector-width=512 -Wall -fcompare-debug-second")

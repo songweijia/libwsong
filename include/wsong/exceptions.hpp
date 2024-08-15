@@ -54,6 +54,14 @@ struct ws_invalid_argument_exp : public ws_exp {
 };
 
 /**
+ * @struct ws_system_error_exp exceptions.hpp <wsong/exceptions.hpp>
+ * @brief System error exception.
+ */
+struct ws_system_error_exp : public ws_exp {
+    ws_system_error_exp (const std::string& message) : ws_exp(message) {}
+};
+
+/**
  * @struct ws_reinitialization_exp exceptions.hpp <wsong/exceptions.hpp>
  * @brief Initialization is called on initialized state.
  */

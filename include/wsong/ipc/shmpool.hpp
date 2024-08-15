@@ -41,7 +41,7 @@ namespace ipc {
  */
 #define WS_SHM_POOL_VA_END      (0x2fffffffffffLLU)
 /**
- * @brief   The virtual address space size for shared memory pools
+ * @brief   The virtual address space size for shared memory pools - 16T
  */
 #define WS_SHM_POOL_VA_SIZE     (0x100000000000LLU)
 /**
