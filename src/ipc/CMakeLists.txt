@@ -38,6 +38,6 @@ install(CODE "execute_process( \
 install(CODE "execute_process( \
     COMMAND ${CMAKE_COMMAND} -E create_symlink \
     ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/ipc_cli \
-    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/shmpl_cli \
+    ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/shmp_cli \
     )"
 )

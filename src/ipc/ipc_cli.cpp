@@ -13,17 +13,19 @@
 #include <thread>
 
 #include <wsong/ipc/ring_buffer.hpp>
+#include <wsong/ipc/shmpool.hpp>
 
 using namespace std::chrono;
 
 const std::unordered_map<std::string,std::string> cli_aliases = {
-    {"rb_cli","ringbuffer"}
+    {"rb_cli","ringbuffer"},
+    {"shmp_cli","shmpool"}
 };
 
 const char* help_string_args = 
 "--(c)md <command>      specifies the command to execute. (mandatory)\n"
-"                       command:=more|show|create|delete|perf|...\n"
-"--(p)roperty <p=val>   specify a property for the command. Multiple --prop entries are alloed.\n"
+"                       command:=more|...\n"
+"--(p)roperty <p=val>   specify a property for the command. Multiple --property entries are allowed.\n"
 "                       use --(h)elp to show the corresponding properties.\n"
 "--(h)elp               print this information.\n";
 
@@ -85,6 +87,49 @@ struct ipc_command {
  * handlers
  */
 struct ipc_command ipc_commands[] = {
+    {"shmpool","more",
+        [](const Properties& props) {
+            std::string command = "more";
+            if (props.find("command")!=props.cend()) {
+                command = props.at("command");
+            }
+            std::string more_string;
+            if (command == "more") {
+                more_string =   "Properties:\n"
+                                "command:=more|create_group|remove_group\n";
+            } else if (command == "create_group" || command == "remove_group") {
+                more_string =   "Properties:\n"
+                                "group:=<group_name>\n";
+            } else {
+                more_string =   "Unknown command:" + command + "\n";
+            }
+            std::cout << more_string << std::endl;
+        }
+    },
+    {"shmpool","create_group",
+        [](const Properties& props) {
+            std::string command = "create_group";
+            if (props.find("group")==props.cend()) {
+                std::cerr << "Please specify group name" << std::endl;
+            } else {
+                auto group = props.at("group");
+                wsong::ipc::ShmPool::create_group(group);
+                std::cout << "Shared memory pool group:" << group << " created." << std::endl;
+            }
+        }
+    },
+    {"shmpool","remove_group",
+        [](const Properties& props) {
+            std::string command = "remove_group";
+            if (props.find("group")==props.cend()) {
+                std::cerr << "Please specify group name" << std::endl;
+            } else {
+                auto group = props.at("group");
+                wsong::ipc::ShmPool::remove_group(group);
+                std::cout << "Shared memory pool group:" << group << " removed." << std::endl;
+            }
+        }
+    },
     {"ringbuffer","more",
         [](const Properties& props) {
             std::string command = "more";

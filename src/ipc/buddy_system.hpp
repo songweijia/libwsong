@@ -73,7 +73,7 @@ public:
             const uint64_t pool_size);
 
     /**
-     * @fn void BuddySystem::free(const uint64_t pool_offset);
+     * @fn void BuddySystem::free(const uint64_t pool_offset, const uint64_t pool_size);
      * @brief   Free a shared memory pool @ offset `pool_offset`, which will be checked against the allocated pool
      *          in the buddy system. Exception will be thrown if such a pool offset does not match any allocated pool.
      * @param[in]   pool_offset The offset of the shared memory pool to be freed.
@@ -104,6 +104,7 @@ public:
     /**
      * @fn void BuddySystem::initialize_buddy_system(const std::string& group, const uint64_t va_cap, const uint64_t min_pool_cap);
      * @brief   Initialize a buddy system. It will NOT create the shared file if not exists.
+     * Please note that this method is NOT thread-safe.
      * @param[in]   group           The group the current process belongs to.
      * @param[in]   va_cap          The virtual address space capacity of this buddy system.
      * @param[in]   min_pool_cap    The minimal pool capacity of this buddy system.
@@ -112,10 +113,17 @@ public:
         const std::string& group,
         const uint64_t va_cap,
         const uint64_t min_pool_cap);
+    /**
+     * @fn void BuddySystem::uninitialize_buddy_system();
+     * @brief uninitialize the buddysystem if it is initialized.
+     * Please note that this method is NOT thread-safe.
+     */
+    WS_DLL_PRIVATE static void uninitialize_buddy_system();
 
     /**
      * @fn void BuddySystem::create_buddy_system(const std::string& group, const uint64_t va_cap, const uint64_t min_pool_cap);
      * @brief   create a system wide buddy system. If it has already exists, an exception will be thrown.
+     * Please note that this method is NOT thread-safe.
      * @param[in]   group           The group the current process belongs to.
      * @param[in]   va_cap          The virtual address space capacity of this buddy system.
      * @param[in]   min_pool_cap    The minimal pool capacity of this buddy system.
@@ -128,10 +136,19 @@ public:
     /**
      * @fn  void BuddySystem::remove_buddy_system();
      * @brief   Destroy and clean the buddy system and remove the system wide state.
-     * Important: this function is not thread-safe. The application is responsible to make sure no alive threads
+     * Important: this function is NOT thread-safe. The application is responsible to make sure no alive threads
      * or processes access the buddy system concurrently.
+     * @param[in]   group           The group the current process belongs to.
      */
-    WS_DLL_PRIVATE static void remove_buddy_system();
+    WS_DLL_PRIVATE static void remove_buddy_system(const std::string& group);
+
+    /**
+     * @fn BuddySystem* get();
+     * @brief get the Buddy system singleton.
+     * @return the 
+     * @throw Exception 
+     */
+    WS_DLL_PRIVATE static BuddySystem* get();
 };
 
 }

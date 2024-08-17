@@ -45,6 +45,10 @@ namespace ipc {
  */
 #define WS_SHM_POOL_VA_SIZE     (0x100000000000LLU)
 /**
+ * @brief   The minimal shared memory pool size - 4G
+ */
+#define WS_MIN_SHM_POOL_SIZE    (0x000100000000LLU)
+/**
  * @brief   The memory chunk size, which is the minimum managable memory unit, for shared memory pools.
  */
 #define WS_SHM_POOL_CHUNK_SIZE  (0x200000)
@@ -72,11 +76,13 @@ public:
      * @brief   An owner process call this api to create a shared memory 
      */
     WS_DLL_PRIVATE ShmPool();
+
     /**
      * @fn ShmPool::~ShmPool();
      * @brief   Destructor
      */
     WS_DLL_PUBLIC virtual ~ShmPool();
+
     /**
      * @fn void* ShmPool::malloc(size_t size)
      * @brief   Memory allocation
@@ -84,6 +90,7 @@ public:
      * @return      The pointer to the allocated memory, or nullptr on failure.
      */
     WS_DLL_PUBLIC virtual void* malloc(size_t size) = 0;
+
     /**
      * @fn  ShmPool::free(void* ptr)
      * @brief   Free memory allocated from the same shared memory pool.
@@ -91,6 +98,26 @@ public:
      * @throws  Exception on failure.
      */
     WS_DLL_PUBLIC virtual void free(void* ptr) = 0;
+
+    /**
+     * @fn void ShmPool::create_group(const std::string& group);
+     * @brief   Create a group of processes sharing the same virtual address space of shared memory.
+     * @param[in]   group   The name of the group.
+     * @throws  Exception on failure.
+     */
+    WS_DLL_PUBLIC static void create_group(const std::string& group);
+
+    /**
+     * @fn void ShmPool::remove_group(const std::string& group);
+     * @brief   Destroy and remove the state of the process group.
+     * Important: the caller is responsible to make sure
+     * - only one process will call this function,
+     * - no other processes/threads hold resources of/rely on this group.
+     * @param[in]   group   The name of the group.
+     * @throws Exception on failure.
+     */
+    WS_DLL_PUBLIC static void remove_group(const std::string& group);
+
     /**
      * @fn void ShmPool::initialize(const std::string& group);
      * @brief   Initialize the shared memory pool system.
@@ -98,14 +125,9 @@ public:
      * @throws  Exception on failure
      */
     WS_DLL_PUBLIC static void initialize(const std::string& group);
+
     /**
-     * @fn void ShmPool::uninitialize();
-     * @brief   Ininitialize the shared memory pool system.
-     * @throws  Exception on failure.
-     */
-    WS_DLL_PUBLIC static void uninitialize();
-    /**
-     * @fn ShmPool* create(const uint64_t)
+     * @fn ShmPool* ShmPool::create(const uint64_t)
      * @brief   Create a shared memory pool
      * @param[in]   capacity    The capacity of the shared memory pool
      * @return  The pointer to the shared memory pool, the caller is responsible for
@@ -113,6 +135,7 @@ public:
      * @throws      Exception on failure.
      */
     WS_DLL_PUBLIC static ShmPool* create(const uint64_t capacity);
+
     /**
      * @fn void unmap(const uint64_t vaddr, const uint64_t size)
      * @brief   Unmap the corresponding address range. Please note that all overlapping chunks

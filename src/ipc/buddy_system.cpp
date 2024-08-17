@@ -20,7 +20,7 @@
 
 #include "shmpool_internals.hpp"
 
-#define IS_POWER_OF_TWO(x)  ((x&((x)-1) == 0) && (x!=0))
+#define IS_POWER_OF_TWO(x)  (((x&((x)-1)) == 0) && (x!=0))
 
 namespace wsong {
 namespace ipc {
@@ -71,15 +71,15 @@ BuddySystem::BuddySystem(
     }
 
     // open the file
-    fd = open(WS_SHM_POOL_GROUP_BUDDIES(this->group_name),O_RDWR);
+    fd = open(get_shm_pool_group_buddies(this->group_name).c_str(),O_RDWR);
     if (fd == -1) {
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to open the buddy system file:{}, error:{}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(this->group_name),strerror(errno)
+                    get_shm_pool_group_buddies(this->group_name),strerror(errno)
 #else
                 std::string("Failed to open the buddy system file:") +
-                    WS_SHM_POOL_GROUP_BUDDIES(this->group_name) + 
+                    get_shm_pool_group_buddies(this->group_name) + 
                     ", error:" + strerror(errno)
 #endif
                 );
@@ -307,10 +307,10 @@ uint64_t BuddySystem::allocate(
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to apply file lock on buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to apply file lock on buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -331,10 +331,10 @@ uint64_t BuddySystem::allocate(
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to unlock buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to unlock buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -379,10 +379,10 @@ void BuddySystem::free(const uint64_t pool_offset, const uint64_t pool_size) {
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to apply file lock on buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to apply file lock on buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -402,10 +402,10 @@ void BuddySystem::free(const uint64_t pool_offset, const uint64_t pool_size) {
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to unlock buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to unlock buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -423,10 +423,10 @@ std::pair<uint64_t,uint64_t> BuddySystem::query(const uint64_t va_offset) {
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to apply shared file lock on buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to apply shared file lock on buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -441,10 +441,10 @@ std::pair<uint64_t,uint64_t> BuddySystem::query(const uint64_t va_offset) {
         throw ws_system_error_exp(
 #if __has_include(<format>)
                 std::format("Failed to unlock buddy system file:{}, error: {}.",
-                    WS_SHM_POOL_GROUP_BUDDIES(group_name),strerror(errno))
+                    get_shm_pool_group_buddies(group_name),strerror(errno))
 #else
                 std::string("Failed to unlock buddy system file:") + 
-                WS_SHM_POOL_GROUP_BUDDIES(group_name) + ", error:" + strerror(errno)
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno)
 #endif
                 );
     }
@@ -459,6 +459,12 @@ std::pair<uint64_t,uint64_t> BuddySystem::query(const uint64_t va_offset) {
 void BuddySystem::initialize_buddy_system(const std::string& group,
         const uint64_t va_cap, const uint64_t min_pool_cap) {
     singleton = std::make_unique<BuddySystem>(group,va_cap,min_pool_cap);
+}
+
+void BuddySystem::uninitialize_buddy_system() {
+    if (singleton) {
+        singleton.reset();
+    }
 }
 
 void BuddySystem::create_buddy_system(const std::string& group,
@@ -501,17 +507,21 @@ void BuddySystem::create_buddy_system(const std::string& group,
     }
 
     // STEP 2: create file.
-    std::ofstream bfile(WS_SHM_POOL_GROUP_BUDDIES(group));
+    std::ofstream bfile(get_shm_pool_group_buddies(group));
     for (uint32_t i=0;i<((va_cap/min_pool_cap)<<1);i++)
         bfile.put(BUDDY_STATE_IDLE);
     bfile.close();
 }
 
-void BuddySystem::remove_buddy_system() {
+void BuddySystem::remove_buddy_system(const std::string& group) {
+    std::filesystem::remove(std::filesystem::path(get_shm_pool_group_buddies(group)));
+}
+
+BuddySystem* BuddySystem::get() {
     if (singleton) {
-        std::string group = singleton->group_name;
-        singleton.reset();
-        std::filesystem::remove(std::filesystem::path(WS_SHM_POOL_GROUP_BUDDIES(group)));
+        return singleton.get();
+    } else {
+        throw ws_invalid_argument_exp("BuddySystem is not initialized.");
     }
 }
 
