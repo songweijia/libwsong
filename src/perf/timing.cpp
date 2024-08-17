@@ -84,8 +84,8 @@ public:
      * @param[in]   tag     Event tag, a.k.a event identifier.
      * @param[in]   u1      User data 1.
      * @param[in]   u2      User data 2.
-     * @param[in]   u2      User data 3.
-     * @param[in]   u2      User data 4.
+     * @param[in]   u3      User data 3.
+     * @param[in]   u4      User data 4.
      */
     static inline void log(uint64_t tag, uint64_t u1, uint64_t u2, uint64_t u3, uint64_t u4) {
         _t.instance_log(tag,u1,u2,u3,u4);

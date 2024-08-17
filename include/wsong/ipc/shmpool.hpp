@@ -114,7 +114,7 @@ public:
      */
     WS_DLL_PUBLIC static ShmPool* create(const uint64_t capacity);
     /**
-     * @fn void unmap(const uint64_t addr, const uint64_t size)
+     * @fn void unmap(const uint64_t vaddr, const uint64_t size)
      * @brief   Unmap the corresponding address range. Please note that all overlapping chunks
      *          will be removed.
      * @param[in]   vaddr       The starting virtual address of the memory range.
