@@ -84,6 +84,28 @@ public:
     WS_DLL_PUBLIC virtual ~ShmPool();
 
     /**
+     * @fn uint64_t ShmPool::get_capacity();
+     * @brief   Get the capacity of this shared memory pool
+     * @return  The capacity of the shared memory pool
+     */
+    WS_DLL_PUBLIC virtual uint64_t get_capacity() = 0;
+
+    /**
+     * @fn uint64_t ShmPool::get_offset();
+     * @brief   Get the offset of this pool in the reserved shared memory virtual space, starting
+     *          from WS_SHM_POOL_VA_START.
+     * @return  The offset of this pool
+     */
+    WS_DLL_PUBLIC virtual uint64_t get_offset() = 0;
+
+    /**
+     * @fn uint64_t ShmPool::get_vaddr();
+     * @brief   Get the starting virtual address of this memory pool.
+     * @return  the starting virtual address of this memory pool.
+     */
+    WS_DLL_PUBLIC virtual uint64_t get_vaddr() = 0;
+
+    /**
      * @fn void* ShmPool::malloc(size_t size)
      * @brief   Memory allocation
      * @param[in]   size    The requested size of the memory
@@ -127,6 +149,13 @@ public:
     WS_DLL_PUBLIC static void initialize(const std::string& group);
 
     /**
+     * @fn void ShmPool::uninitialize();
+     * @brief   Uninitialize.
+     * @throws  Exception on failure
+     */
+    WS_DLL_PUBLIC static void uninitialize();
+
+    /**
      * @fn ShmPool* ShmPool::create(const uint64_t)
      * @brief   Create a shared memory pool
      * @param[in]   capacity    The capacity of the shared memory pool
@@ -134,7 +163,7 @@ public:
      *          destroy it.
      * @throws      Exception on failure.
      */
-    WS_DLL_PUBLIC static ShmPool* create(const uint64_t capacity);
+    WS_DLL_PUBLIC static std::unique_ptr<ShmPool> create(const uint64_t capacity);
 
     /**
      * @fn void unmap(const uint64_t vaddr, const uint64_t size)

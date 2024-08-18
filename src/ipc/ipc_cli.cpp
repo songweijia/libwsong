@@ -90,16 +90,25 @@ struct ipc_command ipc_commands[] = {
     {"shmpool","more",
         [](const Properties& props) {
             std::string command = "more";
-            if (props.find("command")!=props.cend()) {
+            if (PCONTAINS(props,"command")) {
                 command = props.at("command");
             }
             std::string more_string;
             if (command == "more") {
-                more_string =   "Properties:\n"
-                                "command:=more|create_group|remove_group\n";
+                more_string =   "Command list\n"
+                                "Properties:\n"
+                                "command:=more|create_group|remove_group|activate\n";
             } else if (command == "create_group" || command == "remove_group") {
-                more_string =   "Properties:\n"
+                more_string =   (command == "create_group" ? "Create ": "Remove ");
+                more_string +=  "a shared memory pool group\n"
+                                "Properties:\n"
                                 "group:=<group_name>\n";
+            } else if (command == "activate") {
+                more_string =   "Activate a shared memory pool and read/write test\n"
+                                "Properties:\n"
+                                "group:=<group_name>\n"
+                                "psize:=<size of the shared memory pool>, default to WS_MIN_SHM_POOL_SIZE.\n"
+                                "dsize:=<size of the allocated data block>, default to 1 MB.\n";
             } else {
                 more_string =   "Unknown command:" + command + "\n";
             }
@@ -108,25 +117,52 @@ struct ipc_command ipc_commands[] = {
     },
     {"shmpool","create_group",
         [](const Properties& props) {
-            std::string command = "create_group";
-            if (props.find("group")==props.cend()) {
-                std::cerr << "Please specify group name" << std::endl;
-            } else {
+            if (PCONTAINS(props,"group")) {
                 auto group = props.at("group");
                 wsong::ipc::ShmPool::create_group(group);
                 std::cout << "Shared memory pool group:" << group << " created." << std::endl;
+            } else {
+                std::cerr << "Please specify group name" << std::endl;
             }
         }
     },
     {"shmpool","remove_group",
         [](const Properties& props) {
-            std::string command = "remove_group";
-            if (props.find("group")==props.cend()) {
-                std::cerr << "Please specify group name" << std::endl;
-            } else {
+            if (PCONTAINS(props,"group")) {
                 auto group = props.at("group");
                 wsong::ipc::ShmPool::remove_group(group);
                 std::cout << "Shared memory pool group:" << group << " removed." << std::endl;
+            } else {
+                std::cerr << "Please specify group name" << std::endl;
+            }
+        }
+    },
+    {"shmpool","activate",
+        [](const Properties& props) {
+            uint64_t pool_size = WS_MIN_SHM_POOL_SIZE;
+            uint64_t data_size = 0x100000;
+            if (PCONTAINS(props,"group")) {
+                if (PCONTAINS(props,"psize")) {
+                    pool_size = std::stoull(props.at("psize"));
+                }
+                if (PCONTAINS(props,"dsize")) {
+                    data_size = std::stoull(props.at("dsize"));
+                }
+                wsong::ipc::ShmPool::initialize(props.at("group"));
+                auto pool = wsong::ipc::ShmPool::create(pool_size);
+                std::cout << "Pool Allocated with:\n"
+                          << std::hex
+                          << "capacity: 0x" << pool->get_capacity() << "\n"
+                          << "offset:   0x" << pool->get_offset()   << "\n"
+                          << "vaddr:    0x" << pool->get_vaddr()    << "\n"
+                          << std::dec;
+                std::cout << "Press ENTER to continue." << std::endl;
+                std::cin.get();
+                pool.reset();
+                std::cout << "Pool released." << std::endl;
+                wsong::ipc::ShmPool::uninitialize();
+            } else {
+                std::cerr << "Please specify group name" << std::endl;
             }
         }
     },
