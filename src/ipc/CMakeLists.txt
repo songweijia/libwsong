@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12.4)
+cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -10,10 +10,6 @@ target_include_directories(ipc_objs PRIVATE
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
-if (${ENABLE_SHMALLOC})
-target_include_directories(ipc_objs PRIVATE
-    $<BUILD_INTERFACE:${JEMALLOC_INCLUDE_DIRS}>)
-endif()
 
 add_executable(ipc_cli ipc_cli.cpp)
 target_include_directories(ipc_cli PRIVATE
@@ -21,11 +17,7 @@ target_include_directories(ipc_cli PRIVATE
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
-target_link_libraries(ipc_cli ipc_objs)
-if (${ENABLE_SHMALLOC})
-    target_link_libraries(ipc_cli ${JEMALLOC_LIBRARIES})
-endif()
-
+target_link_libraries(ipc_cli ipc_objs jemalloc_pic)
 
 install(TARGETS ipc_cli
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

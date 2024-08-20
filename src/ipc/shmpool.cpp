@@ -1,9 +1,14 @@
 #include <wsong/ipc/shmpool.hpp>
 #include <mutex>
 #include <filesystem>
+#include <errno.h>
+#include <string.h>
+#include <jemalloc/jemalloc.h>
 
 #include "shmpool_internals.hpp"
 #include "buddy_system.hpp"
+
+
 
 namespace wsong {
 namespace ipc {
@@ -13,13 +18,31 @@ namespace fs = std::filesystem;
 ShmPool::ShmPool() {}
 ShmPool::~ShmPool() {}
 
+
+void*   shmpool_extent_alloc(extent_hooks_t*,void*,size_t,size_t,bool*,bool*,unsigned);
+bool    shmpool_extent_dalloc(extent_hooks_t*,void*,size_t,bool,unsigned);
+void    shmpool_extent_destroy(extent_hooks_t*,void*,size_t,bool,unsigned);
+bool    shmpool_extent_commit(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned);
+bool    shmpool_extent_decommit(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned);
+bool    shmpool_extent_purge_lazy(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned);
+bool    shmpool_extent_purge_forced(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned);
+bool    shmpool_extent_split(extent_hooks_t*,void*,size_t,size_t,size_t,bool,unsigned);
+bool    shmpool_extent_merge(extent_hooks_t*,void*,size_t,void*,size_t,bool,unsigned);
+
+
 /**
  * @class   ShmPoolImpl
  * @brief   The class implements the API defined in ShmPool
  */
 class ShmPoolImpl : public ShmPool {
 private:
+    /**
+     * @brief the lock to prevent concurrent lock.
+     */
     static std::mutex   init_lock;
+    /**
+     * @brief global group name
+     */
     static std::string  group;
     /**
      * @brief The offset of pool inside the virtual address space for shared memory pools.
@@ -29,13 +52,65 @@ private:
      * @brief The capacity of this shared memory pool.
      */
     const uint64_t capacity;
+    /**
+     * @brief The arena index of this share memory pool.
+     */
+    unsigned arena_index;
+
+    /**
+     * @fn void ShmPoolImpl::register_arena()
+     * @brief Register the jemalloc arena using offset and capacity setting.
+     */
+    void register_arena() {
+        extent_hooks_t hooks = {
+            .alloc          =   shmpool_extent_alloc,
+            .dalloc         =   shmpool_extent_dalloc,
+            .destroy        =   shmpool_extent_destroy,
+            .commit         =   shmpool_extent_commit,
+            .decommit       =   shmpool_extent_decommit,
+            .purge_lazy     =   shmpool_extent_purge_lazy,
+            .purge_forced   =   shmpool_extent_purge_forced,
+            .split          =   shmpool_extent_split,
+            .merge          =   shmpool_extent_merge
+        };
+
+       
+        size_t oldlen = sizeof(arena_index);
+        if (ws_mallctl("arenas.create",
+                reinterpret_cast<void*>(&arena_index),&oldlen,
+                reinterpret_cast<void*>(&hooks),sizeof(hooks))) {
+            throw ws_system_error_exp(
+                std::string("arenas.create failed with error:") + 
+                strerror(errno));
+        }
+    }
+
+    /**
+     * @fn void ShmPoolImpl::unregister_arena()
+     * @brief Unregister the arena.
+     */
+    void unregister_arena() {
+        if (arena_index == UINT_MAX) return;
+
+        char mallctl_ns[64];
+        sprintf(mallctl_ns,"arena.%u.reset",arena_index);
+        if (ws_mallctl(mallctl_ns,nullptr,nullptr,nullptr,0)) {
+            throw ws_system_error_exp(
+                std::string("mallctl_ns")+ " failed with error:" +
+                strerror(errno));
+        }
+    }
+
 public:
     ShmPoolImpl(const uint64_t cap): 
         ShmPool(), capacity(cap),
-        offset(BuddySystem::get()->allocate(cap)) {
+        offset(BuddySystem::get()->allocate(cap)),
+        arena_index(UINT_MAX) {
+        register_arena();
     }
 
     virtual ~ShmPoolImpl() {
+        unregister_arena();
         BuddySystem::get()->free(offset,capacity);
     }
 

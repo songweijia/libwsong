@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 project(wsong LANGUAGES C CXX)
 
@@ -10,8 +8,12 @@ project(wsong LANGUAGES C CXX)
 set(libwsong_VERSION 1.0rc0)
 set(libwsong_build_VERSION 1.0rc0)
 
-# C++ STANDARD
 
+# C++ STANDARD
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
+
+# FLAGS
 set(CMAKE_CXX_FLAGS_DEBUG             "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -ggdb -gdwarf-3 -ftemplate-backtrace-limit=0")
 set(CMAKE_CXX_FLAGS_RELEASE           "${CMAKE_CXX_FLAGS_RELEASE} -O3 -mprefer-vector-width=512 -Wall -fcompare-debug-second")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO    "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -Wall -ggdb -dgwarf-3 -O3")
@@ -30,6 +32,13 @@ execute_process(COMMAND getconf PAGESIZE OUTPUT_VARIABLE PGSZ)
 string(STRIP ${PGSZ} PGSZ)
 set(PAGE_SIZE ${PGSZ})
 
+# build dependences
+if( NOT EXISTS ${CMAKE_BINARY_DIR}/deps)
+execute_process(COMMAND ${CMAKE_SOURCE_DIR}/scripts/install-jemalloc.sh ${CMAKE_BINARY_DIR}/deps)
+endif ()
+include_directories(${CMAKE_BINARY_DIR}/deps/include)
+link_directories(${CMAKE_BINARY_DIR}/deps/lib)
+
 include(GNUInstallDirs)
 
 if ( NOT DEFINED CMAKE_INSTALL_LIBDIR )
@@ -44,16 +53,6 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 # doxygen
 find_package(Doxygen)
-
-# jemalloc
-find_package(Jemalloc)
-if (${JEMALLOC_FOUND})
-    message(STATUS "Jemalloc is found, shmalloc compoment is enabled.")
-    set(ENABLE_SHMALLOC 1)
-else()
-    message(STATUS "Jemalloc not found, shmalloc component is disabled.")
-    set(ENABLE_SHMALLOC 0)
-endif()
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/wsong/config.h)
 add_subdirectory(src/perf)
@@ -70,9 +69,7 @@ set_target_properties(perf PROPERTIES
 add_library(ipc SHARED
     $<TARGET_OBJECTS:ipc_objs>
 )
-if (${ENABLE_SHMALLOC})
-    target_link_libraries(ipc ${JEMALLOC_LIBRARIES})
-endif()
+target_link_libraries(ipc PRIVATE jemalloc_pic)
 set_target_properties(ipc PROPERTIES
     OUTPUT_NAME wsongipc
 )
