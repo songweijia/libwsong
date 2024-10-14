@@ -212,5 +212,44 @@ std::unique_ptr<ShmPool> ShmPool::create(const uint64_t capacity) {
     return ShmPoolImpl::create(capacity);
 }
 
+/** TODO: Implementing them: **/
+
+void*   shmpool_extent_alloc(extent_hooks_t*,void*,size_t,size_t,bool*,bool*,unsigned) {
+    return nullptr;
+}
+
+bool    shmpool_extent_dalloc(extent_hooks_t*,void*,size_t,bool,unsigned) {
+    return false;
+}
+
+void    shmpool_extent_destroy(extent_hooks_t*,void*,size_t,bool,unsigned) {
+}
+
+bool    shmpool_extent_commit(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned) {
+    return false;
+}
+
+bool    shmpool_extent_decommit(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned) {
+    return false;
+}
+
+bool    shmpool_extent_purge_lazy(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned) {
+    return false;
+}
+
+bool    shmpool_extent_purge_forced(extent_hooks_t*,void*,size_t,size_t,size_t,unsigned) {
+    return false;
+}
+
+bool    shmpool_extent_split(extent_hooks_t*,void*,size_t,size_t,size_t,bool,unsigned) {
+    return false;
+}
+
+bool    shmpool_extent_merge(extent_hooks_t*,void*,size_t,void*,size_t,bool,unsigned) {
+    return false;
+}
+
+/******************************/
+
 } // namespace ipc
 } // namespace wsong
