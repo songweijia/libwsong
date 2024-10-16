@@ -1,154 +1,204 @@
 #pragma once
 /**
  * @file    buddy_system.hpp
- * @brief   The APIs for allocating system-wide shared memory pool.
- * The APIs defined in this file are process-safe: multiple process can call it concurrently.
+ * @brief   The buddy system header file.
+ * The APIs is NOT thread-safe.
  */
-
 #include <wsong/common.h>
 #include <wsong/exceptions.hpp>
-#include <wsong/ipc/shmpool.hpp>
-
 #include <cinttypes>
+#include <functional>
 #include <string>
-#include <memory>
-#include <mutex>
+#include <cstdlib>
+#include <utility>
 
 namespace wsong {
 namespace ipc {
 
 /**
+ * @brief Function of this type will return a raw pointer to the memory to store the
+ * buddy system tree, given the size in bytes.
+ */
+using buddy_system_tree_allocator_t = std::function<void*(size_t)>;
+
+/**
+ * @fn inline bool is_power_of_two(T)
+ * @brief Test if an integer number is power of two.
+ * @tparam      T   The type of the integer
+ * @param[in]   x   The value to be tested.
+ * @return  True if 'x' is power of two, otherwise false.
+ */
+template<typename T>
+inline bool is_power_of_two(T x) {
+    return (x & (x-1)) == 0 && x != 0;
+}
+
+/**
+ * @fn inline T nearest_power_of_two(T)
+ * @brief Round up an integer number to the nearest power of two.
+ * @tparam      T   The type of the integer.
+ * @param[in]   x   The value to be tested.
+ * @return  The value that round up. 
+ * @throws  Exception if overflow.
+ */
+template <typename T>
+inline T nearest_power_of_two(T x) {
+    if (!is_power_of_two(x)) {
+        int lz = __builtin_clz(x);
+        if (lz == 0) {
+            throw ws_invalid_argument_exp("Overflow at finding the next power of two of value" +
+                std::to_string(x));
+        }
+        x = 1;
+        x = x << (sizeof(T)*8 - lz);
+    }
+    return x;
+}
+
+/**
  * @class   BuddySystem buddy_system.hpp    "buddy_system.hpp"
- * @brief The buddy system singleton API
+ * @brief   The budy system API
  */
 class BuddySystem {
 private:
     /**
-     * @brief   The group name
+     * @brief The capacity of the buddy system.
      */
-    const std::string group_name;
+    const uint64_t capacity;
     /**
-     * @brief   The virtual address space capacity for this group. Must be power of two.
+     * @brief The unit size of the buddy system.
      */
-    const uint64_t va_capacity;
+    const uint64_t unit_size;
     /**
-     * @brief   The minimum capacity of a shared memory pool.
+     * @brief The number of levels of the binary tree.
      */
-    const uint64_t min_pool_capacity;
+    const uint32_t total_level;
     /**
-     * @brief   File descriptor
+     * @brief The buddy pointer.
      */
-    int fd;
+    size_t* buddies_ptr;
+
+
     /**
-     * @brief   The buddies system pointer, which pointed to an uint8_t array of length = va_capacity/min_pool_capacity.
+     * @fn uint32_t BuddySystem::allocate_buddy(uint32_t level, const size_t& size);
+     * @brief Allocate a node from the buddy system
+     * The buddy system is managed in a complete binary tree as follows:
+     *    level 1               1       -+
+     *                         / \       |
+     *    level 2             2   3      +-> total level = 3
+     *                       / \ / \     |
+     *    level 3           4  5 6  7   -+
+     * The buddy system is organized in an array of type size_t:
+     * buddies_ptr->[<1>,<2>,<3>,...,<7>], <n> has four possibile values:
+     * 0    - The node is free and not splited.
+     * -1   - The node is splited, and there are some free buddies among its descendants.
+     * -2   - the node is splited, and there is not a free buddy among its descendants.
+     * N    - the node is used by N bytes, where N must be a positive number.
+     *
+     * @param[in]   level           The requested node at the corresponding level, in [1, total_level]
+     * @param[in]   size            The size of the data
+     *
+     * @return      the node id in [1,2^total_level) on success, or 0 if allocation fails.
+     * @throw       Exception on invalid arguemnt
      */
-    uint8_t* buddies_ptr;
+    WS_DLL_PRIVATE uint32_t allocate_buddy(uint32_t level, const size_t& size);
+
     /**
-     * @brief   The multithreading mutex
+     * @fn uint32_t BuddySystem::internal_allocate_buddy(uint32_t level, uint32_t cur, const size_t& size);
+     * @brief allocate a buddy at a specific `level` from tree node `cur` or its descendants.
+     *
+     * @param[in]   level   The level of the buddy we want to allocate.
+     * @param[in]   cur     Current tree node number.
+     * @param[in]   size    Size of the data will be stored.
+     *
+     * @return  The node number of allocated buddy, or 0 for failure.
      */
-    mutable std::mutex  buddies_mutex;
+    WS_DLL_PRIVATE uint32_t internal_allocate_buddy(uint32_t level, uint32_t cur, const size_t& size);
+
     /**
-     * @brief   The global singleton.
+     * @fn bool BuddySystem::internal_is_free(uint32_t cur, const uint64_t offset, const size_t size);
+     * @brief test if the range [offset,offset+size), which MUST be inside of tree node `cur`, is free or not.
+     * 
+     * @param[in]   cur     The tree node to test.
+     * @param[in]   offset  The offset of the range.
+     * @param[in]   size    The size of the range.
+     *
+     * @return True for free, otherwise false.
      */
-    static std::unique_ptr<BuddySystem> singleton;
+    WS_DLL_PRIVATE bool internal_is_free(uint32_t cur, const uint64_t offset, const size_t size);
+
+    /**
+     * @fn void BuddySystem::free_buddy(uint32_t node);
+     * @brief Free a buddy represented by the binary tree node number.
+     *
+     * @param[in]   node_number     The number of the tree node to be freed.
+     *
+     * @throw   Exception on invalid arguments.
+     */
+    WS_DLL_PRIVATE void free_buddy(uint32_t node);
 
 public:
     /**
-     * @fn BuddySystem::BuddySystem(const std::string& group, const uint64_t va_cap, const uint64_t min_pool_cap);
-     * @brief   The constructor.
+     * @fn BuddySystem::BuddySystem (uint32_t capacity_exp, uint32_t unit_exp, const buddy_system_tree_allocator_t& allocator);
+     * @brief   The constructor
+     *
+     * @param[in]   capacity_exp    The 2's exponent of the total capacity of the buddy system.
+     * @param[in]   unit_exp        The 2's exponent of the unit size of the buddy system.
+     * @param[in]   allocator       The allocator for the backup memory space of the buddy system.
      */
-    WS_DLL_PRIVATE BuddySystem(
-            const std::string& group,
-            const uint64_t va_cap,
-            const uint64_t min_pool_cap);
+    WS_DLL_PRIVATE BuddySystem (
+        uint32_t capacity_exp, uint32_t unit_exp,
+        const buddy_system_tree_allocator_t& allocator = [](size_t s){ return malloc(s);});
 
     /**
-     * @fn uint64_t BuddySystem::allocate(const uint64_t pool_size);
-     * @brief   Allocate a shared memory pool with size `pool_size`, which must be power of two.
-     * @param[in]   pool_size   The size of the memory pool, which must be power of two.
-     * @return      The offset of the shared memory pool in the virtual address space.
-     * @throws      Exception will be thrown on failure.
+     * @fn BuddySystem::allocate(const size_t size);
+     * @brief   Allocate an object or memory block of a given size from the buddy system.
+     *
+     * @param[in]   size            The size of the object/memory block
+     *
+     * @return  The offset of the allocated object/memory block in the buddy system.
      */
-    WS_DLL_PRIVATE uint64_t allocate(
-            const uint64_t pool_size);
+    WS_DLL_PRIVATE uint64_t allocate(const size_t size);
 
     /**
-     * @fn void BuddySystem::free(const uint64_t pool_offset, const uint64_t pool_size);
-     * @brief   Free a shared memory pool @ offset `pool_offset`, which will be checked against the allocated pool
-     *          in the buddy system. Exception will be thrown if such a pool offset does not match any allocated pool.
-     * @param[in]   pool_offset The offset of the shared memory pool to be freed.
-     * @param[in]   pool_size   The size of the memory pool, which must be power of two.
-     * @throws      Exception will be thrown on failure.
+     * @fn BuddySystem::free(const uint64_t offset);
+     * @brief   Free an object/memory block allocated from the buddy system.
+     *
+     * @param[in]   offset          The offset of the object in the buddy system.
+     *
+     * @throw       Exception on failure
      */
-    WS_DLL_PRIVATE void free(
-            const uint64_t pool_offset,
-            const uint64_t pool_size);
+    WS_DLL_PRIVATE void free(const uint64_t offset);
 
     /**
-     * @fn std::pair<uint64_t,uint64_t> BuddySystem::query(const uint64_t va_offset);
-     * @brief   Query for the shared memory pool contains a corresponding virtual address, in the form of offset
-     *          relative to the start of the shared virtual memory space.
-     * @param[in]   va_offset   The offset of the address
-     * @return      A pair with the first element be the offset of the shared memory pool, and the second be the size
-     *              of it.
-     * @throw       Exception on failure.
+     *  @fn BuddySystem::is_free(const uint64_t offset, const size_t size);
+     *  @brief  Test if a range is free.
+     *
+     *  @param[in]  offset          The starting offset of this range.
+     *  @param[in]  size            The size of the range.
+     *
+     *  @return     True if there is no overlapping object/memory block, otherwise false.
+     *  @throw      Exception on failure.
      */
-    WS_DLL_PRIVATE std::pair<uint64_t,uint64_t> query(const uint64_t va_offset);
+    WS_DLL_PRIVATE bool is_free(const uint64_t offset, const size_t size);
+
+    /**
+     * @fn std::pair<uint64_t,size_t> BuddySystem::query(const uint64_t offset);
+     * @brief   Finding the buddy containing a corresponding offset.
+     *
+     * @param[in]   offset          The offset of the object in the buddy system
+     *
+     * @return      A pair with the first element being the offset of the buddy, and the second the size of it.
+     * @throw       Exception on failure. 
+     */
+    WS_DLL_PRIVATE std::pair<uint64_t,size_t> query(const uint64_t offset);
 
     /**
      *  @fn BuddySystem::~BuddySystem();
-     *  @brief  The destructor.
+     *  @brief  The destructor
      */
-    WS_DLL_PRIVATE virtual ~BuddySystem();
+    WS_DLL_PRIVATE virtual ~BuddySystem ();
 
-    /**
-     * @fn void BuddySystem::initialize_buddy_system(const std::string& group, const uint64_t va_cap, const uint64_t min_pool_cap);
-     * @brief   Initialize a buddy system. It will NOT create the shared file if not exists.
-     * Please note that this method is NOT thread-safe.
-     * @param[in]   group           The group the current process belongs to.
-     * @param[in]   va_cap          The virtual address space capacity of this buddy system.
-     * @param[in]   min_pool_cap    The minimal pool capacity of this buddy system.
-     */
-    WS_DLL_PRIVATE static void initialize_buddy_system(
-        const std::string& group,
-        const uint64_t va_cap,
-        const uint64_t min_pool_cap);
-    /**
-     * @fn void BuddySystem::uninitialize_buddy_system();
-     * @brief uninitialize the buddysystem if it is initialized.
-     * Please note that this method is NOT thread-safe.
-     */
-    WS_DLL_PRIVATE static void uninitialize_buddy_system();
-
-    /**
-     * @fn void BuddySystem::create_buddy_system(const std::string& group, const uint64_t va_cap, const uint64_t min_pool_cap);
-     * @brief   create a system wide buddy system. If it has already exists, an exception will be thrown.
-     * Please note that this method is NOT thread-safe.
-     * @param[in]   group           The group the current process belongs to.
-     * @param[in]   va_cap          The virtual address space capacity of this buddy system.
-     * @param[in]   min_pool_cap    The minimal pool capacity of this buddy system.
-     */
-    WS_DLL_PRIVATE static void create_buddy_system(
-        const std::string& group,
-        const uint64_t va_cap,
-        const uint64_t min_pool_cap);
-
-    /**
-     * @fn  void BuddySystem::remove_buddy_system();
-     * @brief   Destroy and clean the buddy system and remove the system wide state.
-     * Important: this function is NOT thread-safe. The application is responsible to make sure no alive threads
-     * or processes access the buddy system concurrently.
-     * @param[in]   group           The group the current process belongs to.
-     */
-    WS_DLL_PRIVATE static void remove_buddy_system(const std::string& group);
-
-    /**
-     * @fn BuddySystem* get();
-     * @brief get the Buddy system singleton.
-     * @return the 
-     * @throw Exception 
-     */
-    WS_DLL_PRIVATE static BuddySystem* get();
 };
 
 }
