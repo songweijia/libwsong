@@ -232,5 +232,13 @@ std::pair<uint64_t,size_t> BuddySystem::query(const uint64_t offset) {
     return {buddy_offset,this->buddies_ptr[root]};
 }
 
+uint64_t BuddySystem::get_capacity() {
+    return this->capacity;
+}
+
+uint64_t BuddySystem::get_unit_size() {
+    return this->unit_size;
+}
+
 }
 }

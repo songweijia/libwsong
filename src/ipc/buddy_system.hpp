@@ -78,7 +78,6 @@ private:
      */
     size_t* buddies_ptr;
 
-
     /**
      * @fn uint32_t BuddySystem::allocate_buddy(uint32_t level, const size_t& size);
      * @brief Allocate a node from the buddy system
@@ -199,6 +198,17 @@ public:
      */
     WS_DLL_PRIVATE virtual ~BuddySystem ();
 
+    /**
+     * @fn BuddySystem::get_capacity();
+     * @brief   The getter for attribute capacity.
+     */
+    WS_DLL_PRIVATE uint64_t get_capacity();
+
+    /**
+     * @fn BuddySystem::get_unit_size();
+     * @brief   The getter for attribute unit_size.
+     */
+    WS_DLL_PRIVATE uint64_t get_unit_size();
 };
 
 }
