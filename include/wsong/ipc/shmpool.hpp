@@ -8,13 +8,13 @@
  *
  * This library allows multiple processors to access the data allocated from the shared memory pool. The data can be
  * either pod or complex object, as long as the data is allocated from the same shared memory pool. A shared memory
- * pool has ONE owner process, which takes care of allocation/deallocation of the memory space, and MANY loaner
- * processes, which can only access the data that is allocated by the owner process. For performance reason.
+ * pool has ONE lessor process, which takes care of allocation/deallocation of the memory space, and MANY lessee
+ * processes, which can only access the data that is allocated by the lessor process. For performance reason.
  *
  * To support multiple applications on a same server, we introduced a top level concept called 'group'. Each shared
  * memory pool belongs to one the group. A process have to specify its group, identifed by a string, on starting. Only
- * the processes, no matter owners or a loaners, in the same group can communicate using the shared memory pools.
- * Please note that we allows multiple shared memory pools with different owner processes in a group.
+ * the processes, no matter lessors or a lessees, in the same group can communicate using the shared memory pools.
+ * Please note that we allows multiple shared memory pools with different lessor processes in a group.
  *
  * Each shared memory pool is identified by an integer ID, which is the offset in the full shared memory pool range.
  */
@@ -57,23 +57,23 @@ namespace ipc {
  * @class   ShmPool shmpool.hpp "wsong/ipc/shmpool.hpp"
  * @brief   This class defines the API of a shared memory pool.
  *
- * This class is used by both the owner and loaner of a shared memory pool. The owner use this class to:
+ * This class is used by both the lessor and lessee of a shared memory pool. The lessor use this class to:
  * - create a shared memory pool;
  * - allocate memory from the pool;
  * - free memory back to the pool;
  * - clean/destroy a memory pool.
- * The loaner just use this class's static API to clear the memory mapping in a shared memory pool to avoid lingering
+ * The lessee just use this class's static API to clear the memory mapping in a shared memory pool to avoid lingering
  * mappings that prevents the removing of the shared memory blocks.
  *
  * Important: it is the APPLICATION's RESPONSIBILITY to make sure all loanders of a shared memory pool cleaning its
- * memory mappings before the owner destroys it. Otherwise, either the destruction will fail or unknown behaviour will
+ * memory mappings before the lessor destroys it. Otherwise, either the destruction will fail or unknown behaviour will
  * occur.
  */
 class ShmPool {
 public:
     /**
      * @fn ShmPool::ShmPool(uint64_t capacity);
-     * @brief   An owner process call this api to create a shared memory 
+     * @brief   An lessor process call this api to create a shared memory 
      */
     WS_DLL_PRIVATE ShmPool();
 

@@ -98,7 +98,7 @@ public:
     WS_DLL_PRIVATE VAW(const std::string&  group);
 
     /**
-     * @fn uint64_t VAW::allocate(const uint64_t pool_size);
+     * @fn uint64_t VAW::allocate(const size_t pool_size);
      * @brief   Allocate a shared memory pool with size `pool_size`, which must be power of two.
      *
      * @param[in]   pool_size   The size of the memory pool, which must be power of two.
@@ -106,7 +106,7 @@ public:
      * @return      The offset of the shared memory pool in the virtual address space.
      * @throws      Exception will be thrown on failure.
      */
-    WS_DLL_PRIVATE uint64_t allocate(const uint64_t pool_size);
+    WS_DLL_PRIVATE uint64_t allocate(const size_t pool_size);
 
     /**
      * @fn void VAW::free(const uint64_t pool_offset);
@@ -140,12 +140,19 @@ public:
     /**
      * @fn void VAW::initialize(const std::string& group);
      * @brief   Initialize the process as a member of `group`. It will NOT create the global state on ramdisk if not
-     *          exist. Use `create` for that.
+     *          exist. Use `create` for that. Important: this call is NOT thread safe. It must be called ONLY once.
      * @param[in]   group       The name of the process group.
      *
      * @throws      Exception will be thrown on failure.
      */
     WS_DLL_PRIVATE static void initialize(const std::string& group);
+
+    /**
+     * @fn void VAW::uinitialize();
+     * @brief   Uninitialize the process as a member of `group`. Again, this call is NOT thread safe.
+     * @throws      Exception will be thrown on failure.
+     */
+    WS_DLL_PRIVATE static void uninitialize();
 
     /**
      * @fn void VAW::create(std::string& group);

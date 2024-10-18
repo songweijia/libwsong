@@ -86,7 +86,7 @@ uint64_t VAW::allocate(const size_t pool_size) {
         throw ex;
     }
 
-    // 5 - unlock the buddy system file
+    // 5 - unlock the buddy file
     if (flock(fd,LOCK_UN) == -1) {
         throw ws_system_error_exp (
             std::string(__PRETTY_FUNCTION__ " failed to unlock buddy system file:") +
@@ -96,8 +96,101 @@ uint64_t VAW::allocate(const size_t pool_size) {
     return vaddr;
 }
 
+void VAW::free(const uint64_t pool_offset) {
+    // 1 - validate pool_offset
+    if (pool_offset % buddies->get_unit_size()) {
+        throw ws_invalid_argument_exp(
+            std::string(__PRETTY_FUNCTION__ " got invalid pool offset:") + std::to_string(pool_offset) +
+            ", which is not multiple of unit size:" + std::to_string(buddies->get_unit_size()) + ".");
+    }
+    if (pool_offset > buddies->get_capacity()) {
+        throw ws_invalid_argument_exp(
+            std::string(__PRETTY_FUNCTION__ " got invalid pool offset:") + std::to_string(pool_offset) +
+            ", which is beyond window capacity:" + std::to_string(buddies->get_capacity()) + ".");
+    }
+
+    // 2 - apply pthread lock
+    std::lock_guard<std::mutex> lock(buddies_mutex);
+
+    // 3 - lock the buddy file
+    if (flock(fd,LOCK_EX) == -1) {
+        throw ws_system_error_exp(
+            std::string(__PRETTY_FUNCTION__ " failed to apply file lock on buddy system file:") +
+                get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno));
+    }
+
+    // 4 - free
+    try{
+        buddies->free(pool_offset);
+    } catch(ws_exp& ex) {
+        flock(fd,LOCK_UN);
+        throw ex;
+    }
+
+    // 5 - unlock the buddy file
+    if (flock(fd,LOCK_UN) == -1) {
+        throw ws_system_error_exp (
+            std::string(__PRETTY_FUNCTION__ " failed to unlock buddy system file:") +
+            get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno));
+    }
 }
+
+std::pair<uint64_t, size_t> VAW::query(const int64_t va_offset) {
+    std::pair<uint64_t,size_t> result;
+
+    // 1 - apply pthread lock
+    std::lock_guard<std::mutex> lock(buddies_mutex);
+
+    // 2 - read-lock the buddy file
+    if (flock(fd,LOCK_SH) == -1) {
+        throw ws_system_error_exp(
+            std::string(__PRETTY_FUNCTION__ " failed to apply shared file lock on buddy system file:") +
+            get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno));
+    }
+
+    // 3 - find the offset
+    try {
+        result = buddies->query(va_offset);
+    } catch (ws_exp& ex) {
+        flock(fd,LOCK_UN);
+        throw ex;
+    }
+
+    // 4 - unlock the buddy file
+    if (flock(fd,LOCK_UN) == -1) {
+        throw ws_system_error_exp (
+            std::string(__PRETTY_FUNCTION__ " failed to unlock buddy system file:") +
+            get_shm_pool_group_buddies(group_name) + ", error:" + strerror(errno));
+    }
+
+    return result;
 }
 
+VAW::~VAW() {
+    // nothing to do.
+}
 
+void VAW::initialize(const std::string& group) {
+    singleton = std::make_unique<BuddySystem>(group);
+}
 
+void VAW::uninitialize() {
+    if (singleton) {
+        singleton.reset();
+    }
+}
+
+void VAW::create(const std::string& group) {
+    // 1 - get tree size.
+    uint64_t tree_size = BuddySystem::calc_tree_size(WS_SHM_POOL_VA_SIZE,WS_MIN_SHM_POOL_SIZE);
+
+    // 2 - create file.
+    std::string file_path_str = get_shm_pool_group_buddies(group);
+    std::ofstream bfile(file_path_str);
+    bfile.close();
+    std::filesystem::path path(file_path_str);
+    std::filesystem::resize_file(path,tree_size);
+
+    // 3 - initialize the tree file.
+    // TODO:
+}

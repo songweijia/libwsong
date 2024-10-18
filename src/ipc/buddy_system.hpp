@@ -138,19 +138,23 @@ private:
 
 public:
     /**
+     * TODO:
      * @fn BuddySystem::BuddySystem (uint32_t capacity_exp, uint32_t unit_exp, const buddy_system_tree_allocator_t& allocator);
      * @brief   The constructor
      *
      * @param[in]   capacity_exp    The 2's exponent of the total capacity of the buddy system.
      * @param[in]   unit_exp        The 2's exponent of the unit size of the buddy system.
+     * @param[in]   load_flag       The data is loaded from an existing buddy system therefore no initialization is needed.
      * @param[in]   allocator       The allocator for the backup memory space of the buddy system.
+     * @param[in]   deleter         The deleter for the backup memory space.
      */
     WS_DLL_PRIVATE BuddySystem (
-        uint32_t capacity_exp, uint32_t unit_exp,
-        const buddy_system_tree_allocator_t& allocator = [](size_t s){ return malloc(s);});
+        uint32_t capacity_exp, uint32_t unit_exp, bool load_flag,
+        const buddy_system_tree_allocator_t& allocator,
+        const buddy_system_tree_deleter_t deleter);
 
     /**
-     * @fn BuddySystem::allocate(const size_t size);
+     * @fn uint64_t BuddySystem::allocate(const size_t size);
      * @brief   Allocate an object or memory block of a given size from the buddy system.
      *
      * @param[in]   size            The size of the object/memory block
@@ -160,7 +164,7 @@ public:
     WS_DLL_PRIVATE uint64_t allocate(const size_t size);
 
     /**
-     * @fn BuddySystem::free(const uint64_t offset);
+     * @fn void BuddySystem::free(const uint64_t offset);
      * @brief   Free an object/memory block allocated from the buddy system.
      *
      * @param[in]   offset          The offset of the object in the buddy system.
@@ -170,7 +174,7 @@ public:
     WS_DLL_PRIVATE void free(const uint64_t offset);
 
     /**
-     *  @fn BuddySystem::is_free(const uint64_t offset, const size_t size);
+     *  @fn bool BuddySystem::is_free(const uint64_t offset, const size_t size);
      *  @brief  Test if a range is free.
      *
      *  @param[in]  offset          The starting offset of this range.
@@ -199,16 +203,29 @@ public:
     WS_DLL_PRIVATE virtual ~BuddySystem ();
 
     /**
-     * @fn BuddySystem::get_capacity();
+     * @fn uint64_t BuddySystem::get_capacity();
      * @brief   The getter for attribute capacity.
      */
     WS_DLL_PRIVATE uint64_t get_capacity();
 
     /**
-     * @fn BuddySystem::get_unit_size();
+     * @fn uint64_t BuddySystem::get_unit_size();
      * @brief   The getter for attribute unit_size.
      */
     WS_DLL_PRIVATE uint64_t get_unit_size();
+
+    /**
+     * @fn uint64_t BuddySystem::get_tree_size();
+     * @brief   Calculate the size of tree storage in memory.
+     *
+     * @param[in]   capacity        The capacity of the buddy system.
+     * @param[in]   unit_size       The unit size of the buddy system.
+     *
+     * @return      The size of the binary tree used to store the buddy system.
+     */
+    static inline uint64_t calc_tree_size(uint64_t capacity, uint64_t unit_size) {
+        return static_cast<uint64_t>(capacity/unit_size*sizeof(size_t));
+    }
 };
 
 }

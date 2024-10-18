@@ -240,5 +240,15 @@ uint64_t BuddySystem::get_unit_size() {
     return this->unit_size;
 }
 
+BuddySystem::~BuddySystem() {
+    if (buddies_ptr != MAP_FAILED) {
+        munmap(reinterpret_cast<void*>(buddies_ptr),capacity*sizeof(size_t)/uint_size);
+    }
+
+    if (fd != -1) {
+        close(fd);
+    }
+}
+
 }
 }
