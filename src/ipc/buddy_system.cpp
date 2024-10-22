@@ -25,11 +25,12 @@ namespace ipc {
 #define RANGE_OF(nid,cap)       static_cast<size_t>(cap/NUM_SIBLINGS_OF(nid))
 
 BuddySystem::BuddySystem(
-    uint32_t capacity_exp,
-    uint32_t unit_exp,
-    const buddy_system_tree_allocator_t& allocator) : 
-    capacity(1ull<<capacity_exp), unit_size(1ull<<unit_exp), 
-    total_level(__builtin_ctzl(capacity/unit_size) + 1) {
+    const uint32_t capacity_exp,
+    const uint32_t uint_exp,
+    const bool init_flag,
+    const buddy_system_tree_loader_t& loader) :
+    capacity(1ull<<capacity_exp), uint_size(1ull<<uint_exp),
+    total_level(__builtin_ctzl(capacity/unit_size) + 1), flags(0) {
 
     if (unit_exp > capacity_exp) {
         throw ws_invalid_argument_exp(
@@ -38,7 +39,33 @@ BuddySystem::BuddySystem(
             " < unit exp:" + std::to_string(unit_exp));
     }
 
-    buddies_ptr = reinterpret_cast<size_t*>(allocator((capacity*sizeof(size_t)/unit_size) << 1));
+    buddies_ptr = reinterpret_cast<size_t*>(loader((capacity*sizeof(size_t)/unit_size) << 1));
+
+    if (buddies_ptr == nullptr) {
+        throw ws_system_error_exp(
+            std::string(__PRETTY_FUNCTION__) +": binary tree memory loading failed.");
+    }
+
+    if (init_flag) {
+        buddies_ptr[1] = BUDDY_STATE_IDLE;
+    }
+}
+
+BuddySystem::BuddySystem(
+    uint32_t capacity_exp,
+    uint32_t unit_exp) :
+    capacity(1ull<<capacity_exp), unit_size(1ull<<unit_exp), 
+    total_level(__builtin_ctzl(capacity/unit_size) + 1), flags(TREE_OWNER) {
+
+    if (unit_exp > capacity_exp) {
+        throw ws_invalid_argument_exp(
+            std::string(__PRETTY_FUNCTION__) +
+            ": got invalid capacity/unit size. Capacity exp:" + std::to_string(capacity_exp) +
+            " < unit exp:" + std::to_string(unit_exp));
+    }
+
+    buddies_ptr = reinterpret_cast<size_t*>(malloc((capacity*sizeof(size_t)/unit_size) << 1));
+
     if (buddies_ptr == nullptr) {
         throw ws_system_error_exp(
             std::string(__PRETTY_FUNCTION__) +": memory allocation failed.");
@@ -128,7 +155,7 @@ uint64_t BuddySystem::allocate(const size_t& size) {
     return OFFSET_OF(node,this->capacity);
 }
 
-void free_buddy(uint32_t node_number) {
+void BuddySystem::free_buddy(uint32_t node_number) {
     if (node_number >= (1U<<total_level)) {
         throw ws_invalid_argument_exp(
                 std::string(__PRETTY_FUNCTION__ " tries to free node:") + std::to_string(node_number) +
@@ -157,6 +184,10 @@ void free_buddy(uint32_t node_number) {
         }
         parent = parent >> 1;
     }
+}
+
+bool BuddySystem::is_tree_owner() {
+    return flags&TREE_OWNER;
 }
 
 void BuddySystem::free(const uint64_t offset) {
@@ -241,12 +272,8 @@ uint64_t BuddySystem::get_unit_size() {
 }
 
 BuddySystem::~BuddySystem() {
-    if (buddies_ptr != MAP_FAILED) {
-        munmap(reinterpret_cast<void*>(buddies_ptr),capacity*sizeof(size_t)/uint_size);
-    }
-
-    if (fd != -1) {
-        close(fd);
+    if (is_tree_owner()) {
+        free(reinterpret_cast<void*>(buddies_ptr));
     }
 }
 

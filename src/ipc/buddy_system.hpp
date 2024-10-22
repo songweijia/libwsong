@@ -19,7 +19,7 @@ namespace ipc {
  * @brief Function of this type will return a raw pointer to the memory to store the
  * buddy system tree, given the size in bytes.
  */
-using buddy_system_tree_allocator_t = std::function<void*(size_t)>;
+using buddy_system_tree_loader_t = std::function<void*(size_t)>;
 
 /**
  * @fn inline bool is_power_of_two(T)
@@ -77,6 +77,14 @@ private:
      * @brief The buddy pointer.
      */
     size_t* buddies_ptr;
+    /**
+     * @brief The flag mask
+     */
+    enum FlagMask{
+        /** If I own the tree or not */
+        TREE_OWNER =    0x1
+    };
+    const uint32_t flags;
 
     /**
      * @fn uint32_t BuddySystem::allocate_buddy(uint32_t level, const size_t& size);
@@ -136,22 +144,39 @@ private:
      */
     WS_DLL_PRIVATE void free_buddy(uint32_t node);
 
+    /**
+     * @fn bool BuddySystem::is_tree_owner();
+     *
+     * @brief Test if I own the memory of the binary tree.
+     *
+     * @return True/False
+     */
+     WS_DLL_PRIVATE bool is_tree_owner();
+
 public:
     /**
-     * TODO:
-     * @fn BuddySystem::BuddySystem (uint32_t capacity_exp, uint32_t unit_exp, const buddy_system_tree_allocator_t& allocator);
+     * @fn BuddySystem::BuddySystem (const uint32_t capacity_exp, const uint32_t unit_exp, const bool init_flag, const buddy_system_tree_loader_t& loader);
      * @brief   The constructor
      *
      * @param[in]   capacity_exp    The 2's exponent of the total capacity of the buddy system.
      * @param[in]   unit_exp        The 2's exponent of the unit size of the buddy system.
-     * @param[in]   load_flag       The data is loaded from an existing buddy system therefore no initialization is needed.
-     * @param[in]   allocator       The allocator for the backup memory space of the buddy system.
-     * @param[in]   deleter         The deleter for the backup memory space.
+     * @param[in]   init_flag       The data is loaded from an existing buddy system therefore no initialization is needed.
+     * @param[in]   loader          The allocator for the backup memory space of the buddy system.
      */
     WS_DLL_PRIVATE BuddySystem (
-        uint32_t capacity_exp, uint32_t unit_exp, bool load_flag,
-        const buddy_system_tree_allocator_t& allocator,
-        const buddy_system_tree_deleter_t deleter);
+        const uint32_t capacity_exp,
+        const uint32_t unit_exp, const bool init_flag,
+        const buddy_system_tree_loader_t& loader);
+
+    /**
+     * @fn BuddySystem::BuddySystem (const uint32_t capacity_exp, const uint32_t uint_exp);
+     * @brief   The constructor
+     * @param[in]   capacity_exp    The 2's exponent of the total capacity of the buddy system.
+     * @param[in]   unit_exp        The 2's exponent of the unit size of the buddy system.
+     */
+    WS_DLL_PRIVATE BuddySystem (
+        const uint32_t capacity_exp,
+        const uint32_t uint_exp);
 
     /**
      * @fn uint64_t BuddySystem::allocate(const size_t size);
