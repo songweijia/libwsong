@@ -19,7 +19,7 @@ namespace ipc {
  * @brief Function of this type will return a raw pointer to the memory to store the
  * buddy system tree, given the size in bytes.
  */
-using buddy_system_tree_loader_t = std::function<void*(size_t)>;
+using buddy_system_tree_loader_t = std::function<void*(int64_t)>;
 
 /**
  * @fn inline bool is_power_of_two(T)
@@ -76,7 +76,7 @@ private:
     /**
      * @brief The buddy pointer.
      */
-    size_t* buddies_ptr;
+    int64_t* buddies_ptr;
     /**
      * @brief The flag mask
      */
@@ -95,7 +95,7 @@ private:
      *    level 2             2   3      +-> total level = 3
      *                       / \ / \     |
      *    level 3           4  5 6  7   -+
-     * The buddy system is organized in an array of type size_t:
+     * The buddy system is organized in an array of type int64_t:
      * buddies_ptr->[<1>,<2>,<3>,...,<7>], <n> has four possibile values:
      * 0    - The node is free and not splited.
      * -1   - The node is splited, and there are some free buddies among its descendants.
@@ -249,7 +249,7 @@ public:
      * @return      The size of the binary tree used to store the buddy system.
      */
     static inline uint64_t calc_tree_size(uint64_t capacity, uint64_t unit_size) {
-        return static_cast<uint64_t>(capacity/unit_size*sizeof(size_t));
+        return static_cast<uint64_t>(capacity/unit_size*sizeof(int64_t))<<1;
     }
 };
 

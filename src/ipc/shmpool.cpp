@@ -5,7 +5,7 @@
 #include <string.h>
 #include <jemalloc/jemalloc.h>
 
-#include "shmpool_internals.hpp"
+#include "shmpool_metadata.hpp"
 #include "buddy_system.hpp"
 
 
@@ -104,14 +104,14 @@ private:
 public:
     ShmPoolImpl(const uint64_t cap): 
         ShmPool(), capacity(cap),
-        offset(BuddySystem::get()->allocate(cap)),
+        offset(VAW::get()->allocate(cap)),
         arena_index(UINT_MAX) {
         register_arena();
     }
 
     virtual ~ShmPoolImpl() {
         unregister_arena();
-        BuddySystem::get()->free(offset,capacity);
+        VAW::get()->free(offset);
     }
 
     virtual uint64_t get_capacity() override {
@@ -156,8 +156,8 @@ public:
                     std::string("Failed to create folder:") + group + "'s metadata folder(" +
                     get_shm_pool_group_dir(group) + "). Error:" + errcode.message());
         }
-        // 3. Create the buddy system.
-        BuddySystem::create_buddy_system(group,WS_SHM_POOL_VA_SIZE,WS_MIN_SHM_POOL_SIZE);
+        // 3. Create the virtual address window.
+        VAW::create(group);
         
         // 4. set up group name.
         ShmPoolImpl::group = group;
@@ -165,7 +165,7 @@ public:
 
     WS_DLL_PRIVATE static void remove_group(const std::string& group) {
         if (!group.empty()) {
-            BuddySystem::remove_buddy_system(group);
+            VAW::remove(group);
             fs::remove_all(fs::path(get_shm_pool_group_dir(group)));
         }
     }
@@ -174,14 +174,14 @@ public:
         std::lock_guard<std::mutex> lock(init_lock);
         if (ShmPoolImpl::group.empty()) {
             ShmPoolImpl::group = group;
-            BuddySystem::initialize_buddy_system(group,WS_SHM_POOL_VA_SIZE,WS_MIN_SHM_POOL_SIZE);
+            VAW::initialize(group);
         } else {
             throw ws_reinitialization_exp("ShmPoolImpl has been initialized already.");
         }
     }
 
     WS_DLL_PRIVATE static void uninitialize() {
-        BuddySystem::uninitialize_buddy_system;
+        VAW::uninitialize();
     }
     
     WS_DLL_PRIVATE static std::unique_ptr<ShmPool> create(const uint64_t capacity) {

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-set(IPC_SOURCES ring_buffer.cpp shmpool.cpp buddy_system.cpp)
+set(IPC_SOURCES ring_buffer.cpp shmpool_metadata.cpp shmpool.cpp buddy_system.cpp)
 add_library(ipc_objs OBJECT
     ${IPC_SOURCES})
 target_include_directories(ipc_objs PRIVATE

@@ -1,6 +1,6 @@
 #pragma once
 /**
- * @file    metadata.hpp
+ * @file    shmpool_metadata.hpp
  * @brief   The metadata of shared memory pools.
  *
  * This file contains the API for the metadata operation which falls in two parts:
@@ -30,8 +30,6 @@ namespace ipc {
  * All metadata under group G will be put in "/dev/shm/group_G/"
  */
 #define WS_SHM_POOL_META_PREFIX "group_"
-#define xstr(s) str(s)
-#define str(s)  #s
 
 /**
  * @fn std::string get_shm_pool_group_folder(const std::string& group);
@@ -79,6 +77,11 @@ private:
     int fd;
 
     /**
+     * @brief   The raw size of the buddy binary tree, which is mapped in memory.
+     */
+    size_t tree_size;
+
+    /**
      * @brief   The multithreading mutex - for concurrent control among the threads in current process, NOT among
      *          processes.
      */
@@ -91,11 +94,13 @@ private:
 
 public:
     /**
-     * @fn VAW::VAW(const std::string& group);
+     * @fn VAW::VAW(const std::string& group, const bool init_flag);
      * @brief   The constructor
+     *
      * @param[in]   group       Name of the process group
+     * @param[in]   init_flag   A flag indicating if buddy system initialization is required.
      */
-    WS_DLL_PRIVATE VAW(const std::string&  group);
+    WS_DLL_PRIVATE VAW(const std::string&  group, const bool init_flag);
 
     /**
      * @fn uint64_t VAW::allocate(const size_t pool_size);

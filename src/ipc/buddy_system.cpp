@@ -6,11 +6,11 @@ namespace wsong {
 namespace ipc {
 
 /** @brief  Leaf node is free */
-#define BUDDY_STATE_IDLE            (0)
+#define BUDDY_STATE_IDLE            (0ll)
 /** @brief  Inner node is halfway full: there is some space left in its descendant(s). */
-#define BUDDY_STATE_SPLT_HALFWAY    (-1)
+#define BUDDY_STATE_SPLT_HALFWAY    (-1ll)
 /** @brief  Inner node is full: there is no space left in its descendants. */
-#define BUDDY_STATE_SPLT_FULL       (-2)
+#define BUDDY_STATE_SPLT_FULL       (-2ll)
 /** @brief  Test if a buddy node is full or not */
 #define BUDDY_IS_FULL(s)    ((s > 0) || (s == BUDDY_STATE_SPLT_FULL))
 /** @brief  Get the level of a node */
@@ -26,10 +26,10 @@ namespace ipc {
 
 BuddySystem::BuddySystem(
     const uint32_t capacity_exp,
-    const uint32_t uint_exp,
+    const uint32_t unit_exp,
     const bool init_flag,
     const buddy_system_tree_loader_t& loader) :
-    capacity(1ull<<capacity_exp), uint_size(1ull<<uint_exp),
+    capacity(1ull<<capacity_exp), unit_size(1ull<<unit_exp),
     total_level(__builtin_ctzl(capacity/unit_size) + 1), flags(0) {
 
     if (unit_exp > capacity_exp) {
@@ -39,7 +39,7 @@ BuddySystem::BuddySystem(
             " < unit exp:" + std::to_string(unit_exp));
     }
 
-    buddies_ptr = reinterpret_cast<size_t*>(loader((capacity*sizeof(size_t)/unit_size) << 1));
+    buddies_ptr = reinterpret_cast<int64_t*>(loader(calc_tree_size(capacity,unit_size)));
 
     if (buddies_ptr == nullptr) {
         throw ws_system_error_exp(
@@ -64,7 +64,7 @@ BuddySystem::BuddySystem(
             " < unit exp:" + std::to_string(unit_exp));
     }
 
-    buddies_ptr = reinterpret_cast<size_t*>(malloc((capacity*sizeof(size_t)/unit_size) << 1));
+    buddies_ptr = reinterpret_cast<int64_t*>(malloc((calc_tree_size(capacity,unit_size))));
 
     if (buddies_ptr == nullptr) {
         throw ws_system_error_exp(
@@ -109,10 +109,11 @@ WS_DLL_PRIVATE uint32_t BuddySystem::internal_allocate_buddy(uint32_t level, uin
             buddies_ptr[l]      = BUDDY_STATE_IDLE;
             buddies_ptr[r]      = BUDDY_STATE_IDLE;
             return internal_allocate_buddy(level,l,size);
-        case BUDDY_STATE_SPLT:
-            // try left
+        case BUDDY_STATE_SPLT_HALFWAY:
             {
+                // try left
                 uint32_t ret = internal_allocate_buddy(level,l,size);
+                // try right
                 if (ret == 0) {
                     ret = internal_allocate_buddy(level,r,size);
                 }
@@ -131,7 +132,7 @@ WS_DLL_PRIVATE uint32_t BuddySystem::internal_allocate_buddy(uint32_t level, uin
     }
 }
 
-uint64_t BuddySystem::allocate(const size_t& size) {
+uint64_t BuddySystem::allocate(const size_t size) {
     // 1. Round up to nearest power-of-two value.
     size_t bsize = std::max(nearest_power_of_two(size),this->unit_size);
 
@@ -148,8 +149,8 @@ uint64_t BuddySystem::allocate(const size_t& size) {
     uint32_t node = allocate_buddy(requested_level,size);
 
     if (node == 0) {
-        throw ws_system_error_exp(
-            std::string(__PRETTY_FUNCTION__ " runs out of memory."));
+        throw ws_system_error_exp(__PRETTY_FUNCTION__ + 
+            std::string(" runs out of memory."));
     }
 
     return OFFSET_OF(node,this->capacity);
@@ -157,13 +158,13 @@ uint64_t BuddySystem::allocate(const size_t& size) {
 
 void BuddySystem::free_buddy(uint32_t node_number) {
     if (node_number >= (1U<<total_level)) {
-        throw ws_invalid_argument_exp(
-                std::string(__PRETTY_FUNCTION__ " tries to free node:") + std::to_string(node_number) +
+        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ + 
+                std::string(" tries to free node:") + std::to_string(node_number) +
                 ", which is out of range. Expected range [1," + std::to_string(total_level) + ").");
     }
     if (buddies_ptr[node_number] <= 0) {
-        throw ws_invalid_argument_exp(
-                std::string(__PRETTY_FUNCTION__ " tries to free node:") + std::to_string(node_number) +
+        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ + 
+                std::string(" tries to free node:") + std::to_string(node_number) +
                 "in STATE(" + std::to_string(buddies_ptr[node_number]) +
                 "). Expecting an allocated leaf node.");
     }
@@ -193,9 +194,9 @@ bool BuddySystem::is_tree_owner() {
 void BuddySystem::free(const uint64_t offset) {
     
     if (offset % this->unit_size) {
-        throw ws_invalid_argument_exp(
-            std::string(__PRETTY_FUNCTION__ " requested offset:") + std::to_string(offset) +
-            ", which does not align with unit_size:" + std::to_string(uint_size));
+        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ +
+            std::string(" requested offset:") + std::to_string(offset) +
+            ", which does not align with unit_size:" + std::to_string(unit_size));
     }
 
     const uint32_t node_number  = (this->capacity + offset) / this->unit_size;
@@ -205,10 +206,10 @@ void BuddySystem::free(const uint64_t offset) {
 
 bool BuddySystem::internal_is_free(uint32_t cur, const uint64_t offset, const size_t size) {
     uint64_t node_offset    = OFFSET_OF(cur,this->capacity);
-    uint64_t node_range     = RANGE_OF(cur,this_capacity);
+    uint64_t node_range     = RANGE_OF(cur,this->capacity);
     if (this->buddies_ptr[cur] == BUDDY_STATE_IDLE) {
         return true;
-    } else if (BUDDY_IS_FULL(this->buddies_ptr[cur]) {
+    } else if (BUDDY_IS_FULL(this->buddies_ptr[cur])) {
         return false;
     } else { // BUDDY_STATE_SPLT_HALFWAY
         uint32_t l = cur << 1;
@@ -228,8 +229,8 @@ bool BuddySystem::internal_is_free(uint32_t cur, const uint64_t offset, const si
 
 bool BuddySystem::is_free(const uint64_t offset, const size_t size) {
     if (static_cast<uint64_t>(offset + size) > this->capacity) {
-        throw ws_invalid_argument_exp(
-            std::string(__PRETTY_FUNCTION__ " tested a range out of capacity."));
+        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ +
+            std::string(" tested a range out of capacity."));
     }
     return internal_is_free(1,offset,size);
 }
@@ -251,9 +252,9 @@ std::pair<uint64_t,size_t> BuddySystem::query(const uint64_t offset) {
         }
     }
 
-    if (buffies_ptr[root] == BUDDY_STATE_IDLE) {
-        throw ws_invalid_argument_exp(
-            std::string(__PRETTY_FUNCTION__ " queries offset:") + std::to_string(offset) +
+    if (buddies_ptr[root] == BUDDY_STATE_IDLE) {
+        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ +
+            std::string(" queries offset:") + std::to_string(offset) +
             ", which is out of any allocated buddies.");
     }
 
@@ -273,7 +274,7 @@ uint64_t BuddySystem::get_unit_size() {
 
 BuddySystem::~BuddySystem() {
     if (is_tree_owner()) {
-        free(reinterpret_cast<void*>(buddies_ptr));
+        ::free(reinterpret_cast<void*>(buddies_ptr));
     }
 }
 
