@@ -156,6 +156,7 @@ uint64_t BuddySystem::allocate(const size_t size) {
     return OFFSET_OF(node,this->capacity);
 }
 
+//TODO: fix it: top down.
 void BuddySystem::free_buddy(uint32_t node_number) {
     if (node_number >= (1U<<total_level)) {
         throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ + 

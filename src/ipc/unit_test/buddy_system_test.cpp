@@ -48,12 +48,36 @@ int main(int argc, char** argv) {
     print_tree(tree,4);
 
     try { 
-        uint64_t ofst_3MB= bs.allocate(3<<20);
-        std::cout << "6 - Allocated 3 MB@" << ofst_3MB << std::endl;
+        std::cout << "6 - Allocated 3 MB." << std::endl;
+        bs.allocate(3<<20);
         print_tree(tree,4);
     } catch (wsong::ws_system_error_exp &ex) {
         std::cout << "Failed-OOM." << std::endl;
     }
+
+    std::cout << "7 - Free 100@" << ofst_100 << std::endl;
+    bs.free(ofst_100);
+    print_tree(tree,4);
+
+    std::cout << "8 - Free 1MB@" << ofst_1MB << std::endl;
+    bs.free(ofst_1MB);
+    print_tree(tree,4);
+
+    try {
+    std::cout << "9 - Free 1MB@" << ofst_1MB << " again" << std::endl;
+    bs.free(ofst_1MB);
+    print_tree(tree,4);
+    } catch (wsong::ws_invalid_argument_exp& ex) {
+        std::cout << "Failed-not allocated." << std::endl;
+    }
+
+    std::cout << "10 - Free 1048577@" << ofst_1048577 << std::endl;
+    bs.free(ofst_1048577);
+    print_tree(tree,4);
+
+    std::cout << "11 - Free 2MB@" << ofst_2MB << std::endl;
+    bs.free(ofst_2MB);
+    print_tree(tree,4);
 
     free(reinterpret_cast<void*>(tree));
 
