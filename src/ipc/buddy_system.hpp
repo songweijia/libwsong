@@ -19,7 +19,7 @@ namespace ipc {
  * @brief Function of this type will return a raw pointer to the memory to store the
  * buddy system tree, given the size in bytes.
  */
-using buddy_system_tree_loader_t = std::function<void*(int64_t)>;
+using buddy_system_tree_loader_t = std::function<void*(uint64_t)>;
 
 /**
  * @fn inline bool is_power_of_two(T)

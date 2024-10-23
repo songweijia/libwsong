@@ -11,6 +11,14 @@ target_include_directories(ipc_objs PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
+add_executable(buddy_system_test unit_test/buddy_system_test.cpp)
+target_include_directories(buddy_system_test PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
+target_link_libraries(buddy_system_test ipc_objs jemalloc_pic)
+
 add_executable(ipc_cli ipc_cli.cpp)
 target_include_directories(ipc_cli PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
