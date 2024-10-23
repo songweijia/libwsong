@@ -103,8 +103,9 @@ private:
 
 public:
     ShmPoolImpl(const uint64_t cap): 
-        ShmPool(), capacity(cap),
+        ShmPool(),
         offset(VAW::get()->allocate(cap)),
+        capacity(cap),
         arena_index(UINT_MAX) {
         register_arena();
     }

@@ -14,7 +14,7 @@ namespace ipc {
 /** @brief  Test if a buddy node is full or not */
 #define BUDDY_IS_FULL(s)    ((s > 0) || (s == BUDDY_STATE_SPLT_FULL))
 /** @brief  Get the level of a node */
-#define LEVEL_OF(nid)           static_cast<uint32_t>(32 - __builtin_clz(nid))
+#define LEVEL_OF(nid)           static_cast<uint32_t>(32 - __builtin_clz(static_cast<uint32_t>(nid)))
 /** @brief  Get the number of siblings (nodes at the same level), including tree node itself */
 #define NUM_SIBLINGS_OF(nid)    static_cast<uint32_t>(nearest_power_of_two(nid+1)>>1)
 /** @brief  Get the sibling index (starting from 0, left to right) */
@@ -145,7 +145,7 @@ uint64_t BuddySystem::allocate(const size_t size) {
     }
 
     // 3. allocate
-    const uint32_t requested_level  = __builtin_ctzl(bsize/unit_size) + 1;
+    const uint32_t requested_level  = total_level - __builtin_ctzl(bsize/unit_size);
     uint32_t node = allocate_buddy(requested_level,size);
 
     if (node == 0) {
@@ -205,8 +205,6 @@ void BuddySystem::free(const uint64_t offset) {
 }
 
 bool BuddySystem::internal_is_free(uint32_t cur, const uint64_t offset, const size_t size) {
-    uint64_t node_offset    = OFFSET_OF(cur,this->capacity);
-    uint64_t node_range     = RANGE_OF(cur,this->capacity);
     if (this->buddies_ptr[cur] == BUDDY_STATE_IDLE) {
         return true;
     } else if (BUDDY_IS_FULL(this->buddies_ptr[cur])) {

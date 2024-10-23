@@ -44,7 +44,22 @@ inline bool is_power_of_two(T x) {
 template <typename T>
 inline T nearest_power_of_two(T x) {
     if (!is_power_of_two(x)) {
-        int lz = __builtin_clz(x);
+        int lz;
+        if constexpr (sizeof(T) == 8)
+            lz = __builtin_clzll(x);
+        else if constexpr (sizeof(T) == 4)
+            lz = __builtin_clz(x);
+        else if (x < 0)
+            lz = 0;
+        else {
+            // slow path
+            int meaningful_bits = 0;
+            while(x!=0) {
+                meaningful_bits ++;
+                x=(x>>1);
+            }
+            lz = sizeof(x)*8 - meaningful_bits;
+        }
         if (lz == 0) {
             throw ws_invalid_argument_exp("Overflow at finding the next power of two of value" +
                 std::to_string(x));
