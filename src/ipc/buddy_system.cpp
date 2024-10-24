@@ -156,35 +156,51 @@ uint64_t BuddySystem::allocate(const size_t size) {
     return OFFSET_OF(node,this->capacity);
 }
 
-//TODO: fix it: top down.
 void BuddySystem::free_buddy(uint32_t node_number) {
     if (node_number >= (1U<<total_level)) {
         throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ + 
-                std::string(" tries to free node:") + std::to_string(node_number) +
-                ", which is out of range. Expected range [1," + std::to_string(total_level) + ").");
+            std::string(" tries to free node:") + std::to_string(node_number) +
+            ", which is out of range. Expected range [1," + std::to_string(total_level) + ").");
     }
-    if (buddies_ptr[node_number] <= 0) {
-        throw ws_invalid_argument_exp( __PRETTY_FUNCTION__ + 
+
+    uint32_t root = 1;
+    uint32_t bit_of_interest = (1u << (total_level - 1));
+
+    do {
+        if (buddies_ptr[root] == BUDDY_STATE_IDLE) {
+            throw ws_invalid_argument_exp ( __PRETTY_FUNCTION__ +
                 std::string(" tries to free node:") + std::to_string(node_number) +
-                "in STATE(" + std::to_string(buddies_ptr[node_number]) +
-                "). Expecting an allocated leaf node.");
-    }
-    
-    buddies_ptr[node_number] = BUDDY_STATE_IDLE;
-    int parent = (node_number>>1);
-    while (parent > 0) {
-        if (buddies_ptr[parent<<1] == BUDDY_STATE_IDLE &&
-            buddies_ptr[(parent<<1) + 1] == BUDDY_STATE_IDLE) {
+                ", which is not allocated.");
+        }
+        if (buddies_ptr[root] > 0) {
+            break; // found it!
+        }
+        bit_of_interest = bit_of_interest >> 1;
+        if (bit_of_interest == 0) {
+            throw ws_system_error_exp( __PRETTY_FUNCTION__ +
+                std::string(" buddy state@node:") + std::to_string(root) + " is invalid!");
+        }
+        root = root<<1;
+        if (bit_of_interest & node_number) {
+            root ++; // choose right child instead of left.
+        }
+    } while(true);
+
+    buddies_ptr[root] = BUDDY_STATE_IDLE;
+    root = root>>1;
+    while (root > 0) {
+        if (buddies_ptr[root<<1] == BUDDY_STATE_IDLE &&
+            buddies_ptr[(root<<1) + 1] == BUDDY_STATE_IDLE) {
             // turn to idle
-            buddies_ptr[parent] = BUDDY_STATE_IDLE;
-        } else if (buddies_ptr[parent] == BUDDY_STATE_SPLT_FULL) {
+            buddies_ptr[root] = BUDDY_STATE_IDLE;
+        } else if (buddies_ptr[root] == BUDDY_STATE_SPLT_FULL) {
             // turn to halfway full
-            buddies_ptr[parent] = BUDDY_STATE_SPLT_HALFWAY;
+            buddies_ptr[root] = BUDDY_STATE_SPLT_HALFWAY;
         } else {
             // stay splt, no need to continue.
             break;
         }
-        parent = parent >> 1;
+        root = root >> 1;
     }
 }
 

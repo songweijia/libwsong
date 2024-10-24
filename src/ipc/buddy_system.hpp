@@ -151,9 +151,9 @@ private:
 
     /**
      * @fn void BuddySystem::free_buddy(uint32_t node);
-     * @brief Free a buddy represented by the binary tree node number.
+     * @brief Free a buddy (an allocated leaf) which is the specified node or its parent starting at the same offset.
      *
-     * @param[in]   node_number     The number of the tree node to be freed.
+     * @param[in]   node_number     The specified tree node number.
      *
      * @throw   Exception on invalid arguments.
      */

@@ -64,9 +64,9 @@ int main(int argc, char** argv) {
     print_tree(tree,4);
 
     try {
-    std::cout << "9 - Free 1MB@" << ofst_1MB << " again" << std::endl;
-    bs.free(ofst_1MB);
-    print_tree(tree,4);
+        std::cout << "9 - Free 1MB@" << ofst_1MB << " again" << std::endl;
+        bs.free(ofst_1MB);
+        print_tree(tree,4);
     } catch (wsong::ws_invalid_argument_exp& ex) {
         std::cout << "Failed-not allocated." << std::endl;
     }
@@ -78,6 +78,14 @@ int main(int argc, char** argv) {
     std::cout << "11 - Free 2MB@" << ofst_2MB << std::endl;
     bs.free(ofst_2MB);
     print_tree(tree,4);
+
+    try {
+        std::cout << "12 - Free 2MB@" << ofst_2MB << std::endl;
+        bs.free(ofst_2MB);
+        print_tree(tree,4);
+    } catch (wsong::ws_invalid_argument_exp& ex) {
+        std::cout << "Failed-not allocated." << std::endl;
+    }
 
     free(reinterpret_cast<void*>(tree));
 
